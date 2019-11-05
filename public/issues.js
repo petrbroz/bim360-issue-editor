@@ -59,11 +59,11 @@ async function init(accountId, issueContainerId) {
         $('#issues-table button:enabled').trigger('click');
     });
 
-    refreshIssues(issueClient);
+    refreshIssues(issueClient, accountClient);
 }
 
 // Updates the issues in the UI
-async function refreshIssues(issueClient) {
+async function refreshIssues(issueClient, accountClient) {
     const $container = $('#container');
     const $table = $('#issues-table');
     const $tbody = $table.find('tbody');
@@ -77,6 +77,8 @@ async function refreshIssues(issueClient) {
         </div>
     `);
 
+    let succeeded = true;
+
     // Get issues
     let issues = [];
     try {
@@ -85,9 +87,29 @@ async function refreshIssues(issueClient) {
         issues = await issueClient.listIssues(dueDate, createdBy);
     } catch (err) {
         $container.append(`<div class="alert alert-dismissible alert-warning">${err}</div>`);
+        succeeded = false;
     } finally {
         $('#issues-loading-spinner').remove();
     }
+
+    // Get users
+    let users = [];
+    try {
+        users = await accountClient.listUsers();
+    } catch (err) {
+        $container.append(`<div class="alert alert-dismissible alert-warning">${err}</div>`);
+        succeeded = false;
+    }
+
+    if (!succeeded) {
+        return;
+    }
+
+    const generateOwnerSelect = (ownerId) => `
+        <select class="custom-select custom-select-sm">
+            ${users.map(user => `<option value="${user.uid}" ${(user.uid === ownerId) ? 'selected' : ''}>${user.name}</option>`)}
+        </select>
+    `;
 
     // Update the table
     for (const issue of issues) {
@@ -113,11 +135,7 @@ async function refreshIssues(issueClient) {
                     <input type="text" class="form-control form-control-sm" value="${issue.location_description /* is this the property we want? */}">
                 </td>
                 <td>
-                    <select class="custom-select custom-select-sm">
-                        <option selected>${issue.owner}</option>
-                        <option value="2">Two</option>
-                        <option value="3">Three</option>
-                    </select>
+                    ${generateOwnerSelect(issue.owner)}
                 </td>
                 <td>
                     <input type="text" class="form-control form-control-sm" value="${'' /* ? */}">
