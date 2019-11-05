@@ -62,7 +62,15 @@ router.get('/:issue_container', async function (req, res) {
         if (req.query.ng_issue_subtype_id) {
             filter.ng_issue_subtype_id = req.query.ng_issue_subtype_id;
         }
-        const issues = await req.bim360.listIssues(issue_container, filter);
+        let page = null;
+        if (req.query.offset || req.query.limit) {
+            page = {
+                limit: req.query.limit || 64,
+                offset: req.query.offset || 0
+            };
+        }
+
+        const issues = await req.bim360.listIssues(issue_container, filter, page);
         res.json(issues);
     } catch(err) {
         handleError(err, res);

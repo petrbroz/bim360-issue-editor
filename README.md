@@ -26,6 +26,7 @@ using [Autodesk Forge](https://forge.autodesk.com) APIs.
 
 - clone this repository
 - install dependencies: `yarn install`
+- (for now) manually build the _forge-server-utils_ dependency: `cd node_modules/forge-server-utils && yarn run build:node`
 - provide the following env. variables
   - `FORGE_CLIENT_ID` - client ID of your Forge application
   - `FORGE_CLIENT_SECRET` - client secret of your Forge application

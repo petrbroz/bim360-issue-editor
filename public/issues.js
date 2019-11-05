@@ -5,15 +5,26 @@ $.notify.defaults({
 
 // Populates UI with content
 async function init(accountId, issueContainerId) {
+    let page = 0;
     const accountClient = new AccountClient(accountId);
     const issueClient = new IssueClient(issueContainerId);
 
-    // Initialize the filtering UI
+    // Initialize the filtering and pagination UI
     $('#due-date-picker').on('change', function (ev) {
-        refreshIssues(issueClient);
+        refreshIssues(page, issueClient, accountClient);
     });
     $('#created-by-input').on('change', function (ev) {
-        refreshIssues(issueClient);
+        refreshIssues(page, issueClient, accountClient);
+    });
+    $('#prev-page-link').on('click', function () {
+        if (page > 0) {
+            page = page - 1;
+            refreshIssues(page, issueClient, accountClient);
+        }
+    });
+    $('#next-page-link').on('click', function () {
+        page = page + 1;
+        refreshIssues(page, issueClient, accountClient);
     });
 
     const $table = $('#issues-table');
@@ -59,14 +70,15 @@ async function init(accountId, issueContainerId) {
         $('#issues-table button:enabled').trigger('click');
     });
 
-    refreshIssues(issueClient, accountClient);
+    refreshIssues(page, issueClient, accountClient);
 }
 
 // Updates the issues in the UI
-async function refreshIssues(issueClient, accountClient) {
+async function refreshIssues(page, issueClient, accountClient) {
     const $container = $('#container');
     const $table = $('#issues-table');
     const $tbody = $table.find('tbody');
+    const pageSize = 15;
 
     $tbody.empty();
     $container.append(`
@@ -82,7 +94,7 @@ async function refreshIssues(issueClient, accountClient) {
     try {
         const dueDate = $('#due-date-picker').val();
         const createdBy = $('#created-by-input').val();
-        issues = await issueClient.listIssues(dueDate, createdBy);
+        issues = await issueClient.listIssues(dueDate, createdBy, page * pageSize, pageSize);
     } catch (err) {
         $container.append(`<div class="alert alert-dismissible alert-warning">${err}</div>`);
     } finally {
@@ -102,6 +114,8 @@ async function refreshIssues(issueClient, accountClient) {
             ${users.map(user => `<option value="${user.uid}" ${(user.uid === ownerId) ? 'selected' : ''}>${user.name}</option>`)}
         </select>
     `;
+
+    $('#pagination li.page-item.disabled span').text(`Issues ${page * pageSize + 1}-${(page + 1) * pageSize}`);
 
     // Update the table
     for (const issue of issues) {
@@ -204,20 +218,20 @@ class IssueClient {
         }
     }
 
-    async listIssues(dueDate = null, createdBy = null) {
-        return this._get(``, { due_date: dueDate, created_by: createdBy });
+    async listIssues(dueDate = null, createdBy = null, offset = null, limit = null) {
+        return this._get(``, { due_date: dueDate, created_by: createdBy, offset, limit });
     }
 
     async updateIssue(issueId, attrs) {
         return this._patch(`/${issueId}`, attrs);
     }
 
-    async listIssueComments(issueId) {
-        return this._get(`/${issueId}/comments`);
+    async listIssueComments(issueId, offset = null, limit = null) {
+        return this._get(`/${issueId}/comments`, { offset, limit });
     }
 
-    async listIssueAttachments(issueId) {
-        return this._get(`/${issueId}/attachments`);
+    async listIssueAttachments(issueId, offset = null, limit = null) {
+        return this._get(`/${issueId}/attachments`, { offset, limit });
     }
 
     async listRootCauses() {
