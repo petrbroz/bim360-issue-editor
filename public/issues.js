@@ -77,8 +77,6 @@ async function refreshIssues(issueClient, accountClient) {
         </div>
     `);
 
-    let succeeded = true;
-
     // Get issues
     let issues = [];
     try {
@@ -87,7 +85,6 @@ async function refreshIssues(issueClient, accountClient) {
         issues = await issueClient.listIssues(dueDate, createdBy);
     } catch (err) {
         $container.append(`<div class="alert alert-dismissible alert-warning">${err}</div>`);
-        succeeded = false;
     } finally {
         $('#issues-loading-spinner').remove();
     }
@@ -97,12 +94,7 @@ async function refreshIssues(issueClient, accountClient) {
     try {
         users = await accountClient.listUsers();
     } catch (err) {
-        $container.append(`<div class="alert alert-dismissible alert-warning">${err}</div>`);
-        succeeded = false;
-    }
-
-    if (!succeeded) {
-        return;
+        console.warn('Could not obtain account users. Their list will not be available in the table.', err);
     }
 
     const generateOwnerSelect = (ownerId) => `
