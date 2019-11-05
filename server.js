@@ -19,6 +19,6 @@ app.use(session({
     maxAge: 7 * 24 * 60 * 60 * 1000
 }));
 app.use('/auth', require('./routes/auth'));
-app.use('/api', require('./routes/api'));
+app.use('/api/issues', require('./routes/api/issues'));
 app.use('/', require('./routes/index'));
 app.listen(PORT, () => { console.log(`Server listening on port ${PORT}...`); });

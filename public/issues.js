@@ -156,7 +156,7 @@ class IssueClient {
     }
 
     async _get(endpoint, params = {}) {
-        const url = new URL(`/api/${this.issueContainerId}/${endpoint}`, window.location.origin);
+        const url = new URL(`/api/issues/${this.issueContainerId}` + endpoint, window.location.origin);
         for (const key of Object.keys(params)) {
             if (params[key]) {
                 url.searchParams.append(key, params[key]);
@@ -173,7 +173,7 @@ class IssueClient {
     }
 
     async _patch(endpoint, body, params = {}) {
-        const url = new URL(`/api/${this.issueContainerId}/${endpoint}`, window.location.origin);
+        const url = new URL(`/api/issues/${this.issueContainerId}` + endpoint, window.location.origin);
         for (const key of Object.keys(params)) {
             if (params[key]) {
                 url.searchParams.append(key, params[key]);
@@ -194,34 +194,34 @@ class IssueClient {
     }
 
     async listIssues(dueDate = null, createdBy = null) {
-        return this._get(`issues`, { due_date: dueDate, created_by: createdBy });
+        return this._get(``, { due_date: dueDate, created_by: createdBy });
     }
 
     async updateIssue(issueId, attrs) {
-        return this._patch(`issues/${issueId}`, attrs);
+        return this._patch(`/${issueId}`, attrs);
     }
 
     async listIssueComments(issueId) {
-        return this._get(`issues/${issueId}/comments`);
+        return this._get(`/${issueId}/comments`);
     }
 
     async listIssueAttachments(issueId) {
-        return this._get(`issues/${issueId}/attachments`);
+        return this._get(`/${issueId}/attachments`);
     }
 
     async listRootCauses() {
-        return this._get(`root-causes`);
+        return this._get(`/root-causes`);
     }
 
     async listIssueTypes() {
-        return this._get(`issue-types`);
+        return this._get(`/issue-types`);
     }
 
     async listAttributeDefinitions() {
-        return this._get(`attr-definitions`);
+        return this._get(`/attr-definitions`);
     }
 
     async listAttributeMappings() {
-        return this._get(`attr-mappings`);
+        return this._get(`/attr-mappings`);
     }
 }

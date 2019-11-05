@@ -1,6 +1,6 @@
 const express = require('express');
 const { AuthenticationClient, BIM360Client } = require('forge-server-utils');
-const config = require('../config');
+const config = require('../../config');
 
 let authClient = new AuthenticationClient(config.client_id, config.client_secret);
 let router = express.Router();
@@ -39,8 +39,8 @@ router.use('/', async function (req, res, next) {
     next();
 });
 
-// GET /api/:issue_container/issues
-router.get('/:issue_container/issues', async function (req, res) {
+// GET /api/issues/:issue_container
+router.get('/:issue_container', async function (req, res) {
     const { issue_container } = req.params;
     try {
         let filter = {};
@@ -69,7 +69,7 @@ router.get('/:issue_container/issues', async function (req, res) {
     }
 });
 
-// GET /api/:issue_container/root-causes
+// GET /api/issues/:issue_container/root-causes
 router.get('/:issue_container/root-causes', async function (req, res) {
     const { issue_container } = req.params;
     try {
@@ -80,7 +80,7 @@ router.get('/:issue_container/root-causes', async function (req, res) {
     }
 });
 
-// GET /api/:issue_container/issue-types
+// GET /api/issues/:issue_container/issue-types
 router.get('/:issue_container/issue-types', async function (req, res) {
     const { issue_container } = req.params;
     try {
@@ -91,7 +91,7 @@ router.get('/:issue_container/issue-types', async function (req, res) {
     }
 });
 
-// GET /api/:issue_container/attr-definitions
+// GET /api/issues/:issue_container/attr-definitions
 router.get('/:issue_container/attr-definitions', async function (req, res) {
     const { issue_container } = req.params;
     try {
@@ -102,7 +102,7 @@ router.get('/:issue_container/attr-definitions', async function (req, res) {
     }
 });
 
-// GET /api/:issue_container/attr-mappings
+// GET /api/issues/:issue_container/attr-mappings
 router.get('/:issue_container/attr-mappings', async function (req, res) {
     const { issue_container } = req.params;
     try {
@@ -113,8 +113,8 @@ router.get('/:issue_container/attr-mappings', async function (req, res) {
     }
 });
 
-// PATCH /api/:issue_container/issues/:issue
-router.patch('/:issue_container/issues/:issue', async function (req, res) {
+// PATCH /api/issues/:issue_container/:issue
+router.patch('/:issue_container/:issue', async function (req, res) {
     const { issue_container, issue } = req.params;
     try {
         const attrs = req.body;
@@ -125,8 +125,8 @@ router.patch('/:issue_container/issues/:issue', async function (req, res) {
     }
 });
 
-// GET /api/:issue_container/issues/:issue/comments
-router.get('/:issue_container/issues/:issue/comments', async function (req, res) {
+// GET /api/issues/:issue_container/:issue/comments
+router.get('/:issue_container/:issue/comments', async function (req, res) {
     const { issue_container, issue } = req.params;
     try {
         const comments = await req.bim360.listIssueComments(issue_container, issue);
@@ -136,8 +136,8 @@ router.get('/:issue_container/issues/:issue/comments', async function (req, res)
     }
 });
 
-// GET /api/:issue_container/issues/:issue/attachments
-router.get('/:issue_container/issues/:issue/attachments', async function (req, res) {
+// GET /api/issues/:issue_container/:issue/attachments
+router.get('/:issue_container/:issue/attachments', async function (req, res) {
     const { issue_container, issue } = req.params;
     try {
         const attachments = await req.bim360.listIssueAttachments(issue_container, issue);
