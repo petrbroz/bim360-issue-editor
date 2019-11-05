@@ -3,29 +3,15 @@ $.notify.defaults({
     hideAnimation: 'fadeOut'
 });
 
-// Populates UI with content
+let page = 0;
+
+// Initialize UI
 async function init(accountId, issueContainerId) {
-    let page = 0;
     const accountClient = new AccountClient(accountId);
     const issueClient = new IssueClient(issueContainerId);
 
-    // Initialize the filtering and pagination UI
-    $('#due-date-picker').on('change', function (ev) {
-        refreshIssues(page, issueClient, accountClient);
-    });
-    $('#created-by-input').on('change', function (ev) {
-        refreshIssues(page, issueClient, accountClient);
-    });
-    $('#prev-page-link').on('click', function () {
-        if (page > 0) {
-            page = page - 1;
-            refreshIssues(page, issueClient, accountClient);
-        }
-    });
-    $('#next-page-link').on('click', function () {
-        page = page + 1;
-        refreshIssues(page, issueClient, accountClient);
-    });
+    await initFiltering(issueClient, accountClient);
+    await initPagination(issueClient, accountClient);
 
     const $table = $('#issues-table');
     const $tbody = $table.find('tbody');
@@ -70,11 +56,69 @@ async function init(accountId, issueContainerId) {
         $('#issues-table button:enabled').trigger('click');
     });
 
-    refreshIssues(page, issueClient, accountClient);
+    refreshIssues(issueClient, accountClient);
 }
 
-// Updates the issues in the UI
-async function refreshIssues(page, issueClient, accountClient) {
+async function initFiltering(issueClient, accountClient) {
+    let users = [];
+    try {
+        users = await accountClient.listUsers();
+    } catch (err) {
+        console.warn('Could not obtain account users. Their list will not be available in the UI.', err);
+    }
+
+    const $creatorPicker = $('#creator-picker');
+    $creatorPicker.empty();
+    $creatorPicker.append(`<option value="">(All)</option>`);
+    for (const user of users) {
+        $creatorPicker.append(`<option value="${user.uid}">${user.name}</option>`);
+    }
+
+    let issueTypes = [];
+    try {
+        issueTypes = await issueClient.listIssueTypes();
+    } catch(err) {
+        console.warn('Could not obtain issue types. Their list will not be available in the UI.', err);
+    }
+
+    const $issueTypePicker = $('#issue-type-picker');
+    $issueTypePicker.empty();
+    $issueTypePicker.append(`<option value="">(All)</option>`);
+    for (const issueType of issueTypes) {
+        $issueTypePicker.append(`<option value="${issueType.id}">${issueType.title}</option>`);
+    }
+    $issueTypePicker.on('change', function () {
+        const $issueSubtypePicker = $('#issue-subtype-picker');
+        $issueSubtypePicker.empty();
+        $issueSubtypePicker.append(`<option value="">(All)</option>`);
+        const issueType = issueTypes.find(it => it.id === $issueTypePicker.val());
+        if (issueType) {
+            for (const issueSubtype of issueType.subtypes) {
+                $issueSubtypePicker.append(`<option value="${issueSubtype.id}">${issueSubtype.title}</option>`);
+            }
+        }
+    });
+    $issueTypePicker.trigger('change');
+
+    $('#filter input, #filter select').on('change', function () {
+        refreshIssues(issueClient, accountClient);
+    });
+}
+
+async function initPagination(issueClient, accountClient) {
+    $('#prev-page-link').on('click', function () {
+        if (page > 0) {
+            page = page - 1;
+            refreshIssues(issueClient, accountClient);
+        }
+    });
+    $('#next-page-link').on('click', function () {
+        page = page + 1;
+        refreshIssues(issueClient, accountClient);
+    });
+}
+
+async function refreshIssues(issueClient, accountClient) {
     const $container = $('#container');
     const $table = $('#issues-table');
     const $tbody = $table.find('tbody');
@@ -89,24 +133,26 @@ async function refreshIssues(page, issueClient, accountClient) {
         </div>
     `);
 
-    // Get issues
-    let issues = [];
-    try {
-        const dueDate = $('#due-date-picker').val();
-        const createdBy = $('#created-by-input').val();
-        issues = await issueClient.listIssues(dueDate, createdBy, page * pageSize, pageSize);
-    } catch (err) {
-        $container.append(`<div class="alert alert-dismissible alert-warning">${err}</div>`);
-    } finally {
-        $('#issues-loading-spinner').remove();
-    }
-
     // Get users
     let users = [];
     try {
         users = await accountClient.listUsers();
     } catch (err) {
-        console.warn('Could not obtain account users. Their list will not be available in the table.', err);
+        console.warn('Could not obtain account users. Their list will not be available in the UI.', err);
+    }
+
+    // Get issues
+    let issues = [];
+    try {
+        const createdBy = $('#creator-picker').val();
+        const issueType = $('#issue-type-picker').val();
+        const issueSubtype = $('#issue-subtype-picker').val();
+        const dueDate = $('#due-date-picker').val();
+        issues = await issueClient.listIssues(createdBy || null, dueDate || null, issueType || null, issueSubtype || null, page * pageSize, pageSize);
+    } catch (err) {
+        $container.append(`<div class="alert alert-dismissible alert-warning">${err}</div>`);
+    } finally {
+        $('#issues-loading-spinner').remove();
     }
 
     const generateOwnerSelect = (ownerId) => `
@@ -122,7 +168,7 @@ async function refreshIssues(page, issueClient, accountClient) {
         $tbody.append(`
             <tr>
                 <td>
-                    <input type="text" class="form-control form-control-sm" value="${issue.identifier /* is this the property we want? */}">
+                    ${issue.identifier /* is this the property we want? */}
                 </td>
                 <td>
                     <select class="custom-select custom-select-sm">
@@ -218,8 +264,14 @@ class IssueClient {
         }
     }
 
-    async listIssues(dueDate = null, createdBy = null, offset = null, limit = null) {
-        return this._get(``, { due_date: dueDate, created_by: createdBy, offset, limit });
+    async listIssues(createdBy = null, dueDate = null, issueType = null, issueSubtype = null, offset = null, limit = null) {
+        return this._get(``, {
+            created_by: createdBy,
+            due_date: dueDate,
+            ng_issue_type_id: issueType,
+            ng_issue_subtype_id: issueSubtype,
+            offset, limit
+        });
     }
 
     async updateIssue(issueId, attrs) {

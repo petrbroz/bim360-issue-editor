@@ -35,16 +35,20 @@
     </nav>
     <div id="container">
         <h4>Issues</h4>
-        <div class="filter d-flex justify-content-end align-items-center">
-            <label for="due-date-picker">Due Date:</label>
-            <input type="date" id="due-date-picker">
-            <label for="created-by-input">Created By:</label>
-            <input type="text" id="created-by-input">
+        <div id="filter" class="row">
+            <label for="due-date-picker" class="col-lg-1 col-md-2 col-sm-4">Due Date:</label>
+            <input type="date" id="due-date-picker" class="col-lg-2 col-md-4 col-sm-8 form-control form-control-sm">
+            <label for="creator-picker" class="col-lg-1 col-md-2 col-sm-4">Created By:</label>
+            <select id="creator-picker" class="col-lg-2 col-md-4 col-sm-8 custom-select custom-select-sm"></select>
+            <label for="issue-type-picker" class="col-lg-1 col-md-2 col-sm-4">Type:</label>
+            <select id="issue-type-picker" class="col-lg-2 col-md-4 col-sm-8 custom-select custom-select-sm"></select>
+            <label for="issue-subtype-picker" class="col-lg-1 col-md-2 col-sm-4">Subtype:</label>
+            <select id="issue-subtype-picker" class="col-lg-2 col-md-4 col-sm-8 custom-select custom-select-sm"></select>
         </div>
         <table id="issues-table" class="table table-sm">
             <thead>
                 <tr>
-                    <th>#</th>
+                    <th style="width: 4em;">#</th>
                     <th>Type</th>
                     <th>Title</th>
                     <th>Loc.</th>
