@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="https://petrbroz.github.io/forge-bootstrap-theme/forge-bootstrap-light.min.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="/main.css">
+    <script src="https://kit.fontawesome.com/8309329604.js" crossorigin="anonymous"></script>
+    <title>BIM360 Issue Editor</title>
+</head>
+
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <a class="navbar-brand" href="/">
+            <img src="/forge-logo-white.png" alt="Autodesk Forge">
+            BIM360 Issues Editor
+        </a>
+        <ol class="breadcrumb mr-auto">
+            <li class="breadcrumb-item active" aria-current="page">
+                <%= hub.name %>
+            </li>
+        </ol>
+        <% if (!session || !session.access_token) { %>
+            <a class="btn btn-secondary" href="/auth/login">Login</a>
+        <% } else { %>
+            <a class="btn btn-secondary" href="/auth/logout">Logout (<%= session.user_name %>)</a>
+        <% } %>
+    </nav>
+    <div id="container">
+        <h4>Projects</h4>
+        <div class="card-deck">
+            <% for (const project of projects) { %>
+                <div class="card col-lg-3 col-md-6 col-sm-12">
+                    <img src="https://placeimg.com/320/180/arch?seed=<%= project.id %>" class="card-img-top" alt="Project <%= project.name %>">
+                    <div class="card-body">
+                        <h5 class="card-title"><%= project.name %></h5>
+                        <p class="card-text"><%= project.id %></p>
+                        <a href="/<%= hub.id %>/<%= project.id %>" class="card-link">View Issues</a>
+                    </div>
+                </div>
+            <% } %>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+</body>
+
+</html>

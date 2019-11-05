@@ -1,0 +1,21 @@
+.filter {
+    padding-top: 1em;
+    padding-bottom: 1em;
+}
+
+.filter label, .filter input {
+    margin: 0;
+    margin-left: 1em;
+}
+
+#issues-table > tbody button:disabled {
+    opacity: 0.25;
+}
+
+.fixed-bottom {
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0.5em;
+}

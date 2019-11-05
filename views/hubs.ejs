@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="https://petrbroz.github.io/forge-bootstrap-theme/forge-bootstrap-light.min.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="/main.css">
+    <link rel="stylesheet" href="/hubs.css">
+    <script src="https://kit.fontawesome.com/8309329604.js" crossorigin="anonymous"></script>
+    <title>BIM360 Issue Editor</title>
+</head>
+
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <a class="navbar-brand" href="/">
+            <img src="/forge-logo-white.png" alt="Autodesk Forge">
+            BIM360 Issues Editor
+        </a>
+        <% if (!session || !session.access_token) { %>
+            <a class="btn btn-primary" href="/auth/login">Login</a>
+        <% } else { %>
+            <a class="btn btn-secondary" href="/auth/logout">Logout (<%= session.user_name %>)</a>
+        <% } %>
+    </nav>
+    <div id="container">
+        <% if (!session.access_token) { %>
+            <div class="d-flex justify-content-center align-items-center h-100">
+                <div class="alert alert-light" role="alert">
+                    <a href="/auth/login">Login</a> with your Autodesk account.
+                </div>
+            </div>
+        <% } else { %>
+            <h4>Hubs</h4>
+            <% if (hubs.length > 0) { %>
+                <div class="card-deck">
+                    <% for (const hub of hubs) { %>
+                        <div class="card col-lg-3 col-md-6 col-sm-12">
+                            <img src="https://placeimg.com/320/180/arch?seed=<%= hub.id %>" class="card-img-top" alt="Hub <%= hub.name %>">
+                            <div class="card-body">
+                                <h5 class="card-title"><%= hub.name %></h5>
+                                <p class="card-text"><%= hub.id %></p>
+                                <a href="/<%= hub.id %>" class="card-link">View Projects</a>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
+            <% } else { %>
+                <div class="alert alert-warning" role="alert">
+                    We don't see any BIM 360 hubs under your account. Don't forget to add this application
+                    as a <a href="https://forge.autodesk.com/en/docs/bim360/v1/tutorials/getting-started/manage-access-to-docs">custom integration</a>
+                    to your BIM 360 project.
+                    <ul>
+                        <li>Forge Client ID: <%= client_id %></li>
+                        <li>App Name: <%= app_name %></li>
+                    </ul>
+                </div>
+            <% } %>
+        <% } %>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+</body>
+
+</html>

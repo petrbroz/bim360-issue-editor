@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="https://petrbroz.github.io/forge-bootstrap-theme/forge-bootstrap-light.min.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <link rel="stylesheet" href="/main.css">
+    <link rel="stylesheet" href="/issues.css">
+    <script src="https://kit.fontawesome.com/8309329604.js" crossorigin="anonymous"></script>
+    <title>BIM360 Issue Editor</title>
+</head>
+
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <a class="navbar-brand" href="/">
+            <img src="/forge-logo-white.png" alt="Autodesk Forge">
+            BIM360 Issues Editor
+        </a>
+        <ol class="breadcrumb mr-auto">
+            <li class="breadcrumb-item" aria-current="page">
+                <a href="/<%= hub.id %>"><%= hub.name %></a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+                <%= project.name %>
+            </li>
+        </ol>
+        <% if (!session || !session.access_token) { %>
+            <a class="btn btn-secondary" href="/auth/login">Login</a>
+        <% } else { %>
+            <a class="btn btn-secondary" href="/auth/logout">Logout (<%= session.user_name %>)</a>
+        <% } %>
+    </nav>
+    <div id="container">
+        <h4>Issues</h4>
+        <div class="filter d-flex justify-content-end align-items-center">
+            <label for="due-date-picker">Due Date:</label>
+            <input type="date" id="due-date-picker">
+            <label for="created-by-input">Created By:</label>
+            <input type="text" id="created-by-input">
+        </div>
+        <table id="issues-table" class="table table-sm">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Type</th>
+                    <th>Title</th>
+                    <th>Loc.</th>
+                    <th>D.Loc.</th>
+                    <th>Owner</th>
+                    <th>Affects</th>
+                    <!-- <th>Attachments</th> -->
+                    <th>Description</th>
+                    <th>Answer</th>
+                    <th>Status</th>
+                    <!-- <th>Comments</th> -->
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+    <div class="fixed-bottom bg-light">
+        <button type="button" id="update-issues-button" class="btn btn-sm btn-success" disabled>
+            <i class="fas fa-cloud-upload-alt"></i> Update Issues
+        </button>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <script src="https://rawgit.com/notifyjs/notifyjs/master/dist/notify.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="/issues.js"></script>
+    <% if (container) { %>
+        <script>
+            init('<%= container %>');
+        </script>
+    <% } %>
+</body>
+
+</html>
