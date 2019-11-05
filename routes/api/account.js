@@ -3,7 +3,7 @@ const { AuthenticationClient, BIM360Client } = require('forge-server-utils');
 const config = require('../../config');
 
 let authClient = new AuthenticationClient(config.client_id, config.client_secret);
-let bim360Client = new BIM360Client({ client_id: config.client_id, client_secret: config.client_secret });
+let bim360Client = new BIM360Client({ client_id: config.client_id, client_secret: config.client_secret }, undefined, config.region);
 let router = express.Router();
 
 function handleError(err, res) {
