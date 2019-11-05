@@ -4,7 +4,8 @@ $.notify.defaults({
 });
 
 // Populates UI with content
-async function init(issueContainerId) {
+async function init(accountId, issueContainerId) {
+    const accountClient = new AccountClient(accountId);
     const issueClient = new IssueClient(issueContainerId);
 
     // Initialize the filtering UI
@@ -223,5 +224,53 @@ class IssueClient {
 
     async listAttributeMappings() {
         return this._get(`/attr-mappings`);
+    }
+}
+
+class AccountClient {
+    constructor(accountId) {
+        this.accountId = accountId;
+    }
+
+    async _get(endpoint, params = {}) {
+        const url = new URL(`/api/account/${this.accountId}` + endpoint, window.location.origin);
+        for (const key of Object.keys(params)) {
+            if (params[key]) {
+                url.searchParams.append(key, params[key]);
+            }
+        }
+        const response = await fetch(url.toString());
+        if (response.ok) {
+            const json = await response.json();
+            return json;
+        } else {
+            const message = await response.text();
+            throw new Error(message);
+        }
+    }
+
+    async _patch(endpoint, body, params = {}) {
+        const url = new URL(`/api/account/${this.accountId}` + endpoint, window.location.origin);
+        for (const key of Object.keys(params)) {
+            if (params[key]) {
+                url.searchParams.append(key, params[key]);
+            }
+        }
+        const response = await fetch(url.toString(), {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        if (response.ok) {
+            const json = await response.json();
+            return json;
+        } else {
+            const message = await response.text();
+            throw new Error(message);
+        }
+    }
+
+    async listUsers() {
+        return this._get(`/users`);
     }
 }

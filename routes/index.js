@@ -61,7 +61,7 @@ router.get('/:hub/:project', async function (req, res) {
             project = await req.bim360.getProjectDetails(req.params.hub, req.params.project);
             container = await req.bim360.getIssueContainerID(req.params.hub, req.params.project);
         }
-        res.render('issues', { session: req.session, hub: hub, project, container });
+        res.render('issues', { session: req.session, hub: hub, project, container, account: req.params.hub.replace('b.', '') });
     } catch(err) {
         res.render('error', { session: req.session, error: err });
     }

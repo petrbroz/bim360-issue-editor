@@ -20,5 +20,6 @@ app.use(session({
 }));
 app.use('/auth', require('./routes/auth'));
 app.use('/api/issues', require('./routes/api/issues'));
+app.use('/api/account', require('./routes/api/account'));
 app.use('/', require('./routes/index'));
 app.listen(PORT, () => { console.log(`Server listening on port ${PORT}...`); });
