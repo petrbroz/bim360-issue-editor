@@ -32,7 +32,11 @@ async function init(accountId, issueContainerId) {
             const $tr = $target.closest('tr');
             const attrs = {
                 title: $tr.find('input.issue-title').val(),
-                description: $tr.find('input.issue-description').val()
+                description: $tr.find('input.issue-description').val(),
+                status: $tr.find('input.issue-status').val(),
+                owner: $tr.find('input.issue-owner').val(),
+                answer: $tr.find('input.issue-answer').val(),
+                ng_issue_type_id: $tr.find('input.issue-type').val()
             };
             issueClient.updateIssue(issueId, attrs)
                 .then(function (issue) {
@@ -155,8 +159,22 @@ async function refreshIssues(issueClient, accountClient) {
         $('#issues-loading-spinner').remove();
     }
 
+    // Get issue types
+    let issueTypes = [];
+    try {
+        issueTypes = await issueClient.listIssueTypes();
+    } catch(err) {
+        console.warn('Could not obtain issue types. Their list will not be available in the UI.', err);
+    }
+
+    const generateIssueTypeSelect = (issueTypeId) => `
+        <select class="custom-select custom-select-sm issue-type">
+            ${issueTypes.map(issueType => `<option value="${issueType.id}" ${(issueType.id === issueTypeId) ? 'selected' : ''}>${issueType.title}</option>`)}
+        </select>
+    `;
+
     const generateOwnerSelect = (ownerId) => `
-        <select class="custom-select custom-select-sm">
+        <select class="custom-select custom-select-sm issue-owner">
             ${users.map(user => `<option value="${user.uid}" ${(user.uid === ownerId) ? 'selected' : ''}>${user.name}</option>`)}
         </select>
     `;
@@ -171,11 +189,7 @@ async function refreshIssues(issueClient, accountClient) {
                     ${issue.identifier /* is this the property we want? */}
                 </td>
                 <td>
-                    <select class="custom-select custom-select-sm">
-                        <option selected>${issue.issue_sub_type}</option>
-                        <option value="2">Two</option>
-                        <option value="3">Three</option>
-                    </select>
+                    ${generateIssueTypeSelect(issue.ng_issue_type_id)}
                 </td>
                 <td>
                     <input type="text" class="form-control form-control-sm issue-title" value="${issue.title}">
@@ -199,13 +213,13 @@ async function refreshIssues(issueClient, accountClient) {
                     <input type="text" class="form-control form-control-sm issue-description" value="${issue.description}">
                 </td>
                 <td>
-                    <input type="text" class="form-control form-control-sm" value="${issue.answer}">
+                    <input type="text" class="form-control form-control-sm issue-answer" value="${issue.answer}">
                 </td>
                 <td>
-                    <select class="custom-select custom-select-sm">
-                        <option selected>${issue.status}</option>
-                        <option value="2">Two</option>
-                        <option value="3">Three</option>
+                    <select class="custom-select custom-select-sm issue-status">
+                        <option value="draft" ${(issue.status === 'draft') ? 'selected' : ''}>Draft</option>
+                        <option value="open" ${(issue.status === 'open') ? 'selected' : ''}>Open</option>
+                        <option value="close" ${(issue.status === 'close') ? 'selected' : ''}>Close</option>
                     </select>
                 </td>
                 <!--<td>
