@@ -14,6 +14,10 @@ using [Autodesk Forge](https://forge.autodesk.com) APIs.
 
 ![Screenshot](./docs/screenshot.png)
 
+## Demo
+
+https://bim360-issue-editor.herokuapp.com
+
 ## Development
 
 ### Prerequisites
