@@ -37,6 +37,7 @@ https://bim360-issue-editor.herokuapp.com
   - `FORGE_APP_NAME` - name of your Forge application (used when asking user to setup the BIM 360 integration)
   - `HOST_URL` - URL where the demo application is running (for example, _http://localhost:3000_)
   - `SERVER_SESSION_SECRET` - secret phrase used to encrypt session cookies
+  - optionally, `FORGE_REGION` - region to use for various Forge API calls ('US' or 'EMEA'; 'US' by default)
 
 ### Running
 
