@@ -65,8 +65,8 @@ router.get('/:issue_container', async function (req, res) {
         let page = null;
         if (req.query.offset || req.query.limit) {
             page = {
-                limit: req.query.limit || 64,
-                offset: req.query.offset || 0
+                limit: parseInt(req.query.limit) || 64,
+                offset: parseInt(req.query.offset) || 0
             };
         }
 
