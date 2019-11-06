@@ -19,7 +19,7 @@ router.use('/', async function (req, res, next) {
                 return;
             }
         }
-        req.bim360 = new BIM360Client({ token: req.session.access_token }, undefined, config.region);
+        req.bim360 = new BIM360Client({ token: req.session.access_token }, undefined, req.query.region);
     }
     next();
 });

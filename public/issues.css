@@ -27,3 +27,8 @@
 ul.pagination {
     margin-bottom: 0;
 }
+
+th.center, td.center {
+    text-align: center;
+    vertical-align: middle;
+}
