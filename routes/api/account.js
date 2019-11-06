@@ -3,7 +3,6 @@ const { AuthenticationClient, BIM360Client } = require('forge-server-utils');
 const config = require('../../config');
 
 let authClient = new AuthenticationClient(config.client_id, config.client_secret);
-let bim360Client = new BIM360Client({ client_id: config.client_id, client_secret: config.client_secret }, undefined, config.region);
 let router = express.Router();
 
 function handleError(err, res) {
@@ -35,6 +34,7 @@ router.use('/', async function (req, res, next) {
                 return;
             }
         }
+        req.bim360 = new BIM360Client({ client_id: config.client_id, client_secret: config.client_secret }, undefined, req.query.region);
     }
     next();
 });
@@ -58,7 +58,7 @@ router.get('/:account/users', async function (req, res) {
         if (req.query.operator) {
             filter.operator = req.query.operator;
         }
-        const users = await bim360Client.listUsers(account, filter);
+        const users = await req.bim360.listUsers(account, filter);
         res.json(users);
     } catch(err) {
         handleError(err, res);

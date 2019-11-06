@@ -283,12 +283,14 @@ class IssueView {
 }
 
 class IssueClient {
-    constructor(issueContainerId) {
+    constructor(issueContainerId, region) {
         this.issueContainerId = issueContainerId;
+        this.region = region;
     }
 
     async _get(endpoint, params = {}) {
         const url = new URL(`/api/issues/${this.issueContainerId}` + endpoint, window.location.origin);
+        url.searchParams.append('region', this.region);
         for (const key of Object.keys(params)) {
             if (params[key]) {
                 url.searchParams.append(key, params[key]);
@@ -306,6 +308,7 @@ class IssueClient {
 
     async _patch(endpoint, body, params = {}) {
         const url = new URL(`/api/issues/${this.issueContainerId}` + endpoint, window.location.origin);
+        url.searchParams.append('region', this.region);
         for (const key of Object.keys(params)) {
             if (params[key]) {
                 url.searchParams.append(key, params[key]);
@@ -365,12 +368,14 @@ class IssueClient {
 }
 
 class AccountClient {
-    constructor(accountId) {
+    constructor(accountId, region) {
         this.accountId = accountId;
+        this.region = region;
     }
 
     async _get(endpoint, params = {}) {
         const url = new URL(`/api/account/${this.accountId}` + endpoint, window.location.origin);
+        url.searchParams.append('region', this.region);
         for (const key of Object.keys(params)) {
             if (params[key]) {
                 url.searchParams.append(key, params[key]);
@@ -388,6 +393,7 @@ class AccountClient {
 
     async _patch(endpoint, body, params = {}) {
         const url = new URL(`/api/account/${this.accountId}` + endpoint, window.location.origin);
+        url.searchParams.append('region', this.region);
         for (const key of Object.keys(params)) {
             if (params[key]) {
                 url.searchParams.append(key, params[key]);
@@ -413,12 +419,14 @@ class AccountClient {
 }
 
 class LocationClient {
-    constructor(issueContainerId) {
+    constructor(issueContainerId, region) {
         this.issueContainerId = issueContainerId;
+        this.region = region;
     }
 
     async _get(endpoint = '', params = {}) {
         const url = new URL(`/api/locations/${this.issueContainerId}` + endpoint, window.location.origin);
+        url.searchParams.append('region', this.region);
         for (const key of Object.keys(params)) {
             if (params[key]) {
                 url.searchParams.append(key, params[key]);
