@@ -18,6 +18,12 @@ using [Autodesk Forge](https://forge.autodesk.com) APIs.
 
 https://bim360-issue-editor.herokuapp.com
 
+In order to be able to access your BIM 360 project from this demo,
+you will need to add the following Forge credentials as a [custom integration](https://forge.autodesk.com/en/docs/bim360/v1/tutorials/getting-started/manage-access-to-docs):
+
+- Forge Client ID: `gnChEZ6tph1H9IAelM2mYufYZVU1qqKt`
+- Forge App Name: `Internal BIM360 Testing App`
+
 ## Development
 
 ### Prerequisites
