@@ -204,7 +204,7 @@ class IssueView {
         for (const issue of issues) {
             $tbody.append(`
                 <tr>
-                    <td>
+                    <td class="center">
                         ${issue.identifier}
                     </td>
                     <td>
