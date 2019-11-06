@@ -40,6 +40,18 @@ class IssueView {
             const $target = $(ev.target);
             $target.closest('tr').find('button.update-issue').removeAttr('disabled');
             $('#update-issues-button').removeAttr('disabled');
+
+            // If issue type is changed, update the corresponding subtype dropdown as well
+            if ($target.hasClass('issue-type')) {
+                const issueTypeId = $target.val();
+                const issueType = this.issueTypes.find(it => it.id === issueTypeId);
+                const issueSubtypes = issueType ? issueType.subtypes : [];
+                const $issueSubtypeDropdown = $target.closest('tr').find('select.issue-subtype');
+                $issueSubtypeDropdown.empty();
+                for (const issueSubtype of issueSubtypes) {
+                    $issueSubtypeDropdown.append(`<option value="${issueSubtype.id}">${issueSubtype.title}</option>`)
+                }
+            }
         });
 
         // Update issue when button in its row is clicked
@@ -156,13 +168,23 @@ class IssueView {
                 ${this.issueTypes.map(issueType => `<option value="${issueType.id}" ${(issueType.id === issueTypeId) ? 'selected' : ''}>${issueType.title}</option>`).join('\n')}
             </select>
         `;
-    
+
+        const generateIssueSubtypeSelect = (issueTypeId, issueSubtypeId) => {
+            const issueType = this.issueTypes.find(it => it.id === issueTypeId);
+            const issueSubtypes = issueType ? issueType.subtypes : [];
+            return `
+                <select class="custom-select custom-select-sm issue-subtype">
+                    ${issueSubtypes.map(issueSubtype => `<option value="${issueSubtype.id}" ${(issueSubtype.id === issueSubtypeId) ? 'selected' : ''}>${issueSubtype.title}</option>`).join('\n')}
+                </select>
+            `;
+        };
+
         const generateOwnerSelect = (ownerId) => `
             <select class="custom-select custom-select-sm issue-owner">
                 ${this.users.map(user => `<option value="${user.uid}" ${(user.uid === ownerId) ? 'selected' : ''}>${user.name}</option>`).join('\n')}
             </select>
         `;
-    
+
         const generateLocationSelect = (locationId) => `
             <select class="custom-select custom-select-sm issue-location">
                 <option value=""></option>
@@ -183,10 +205,13 @@ class IssueView {
             $tbody.append(`
                 <tr>
                     <td>
-                        ${issue.identifier /* is this the property we want? */}
+                        ${issue.identifier}
                     </td>
                     <td>
                         ${generateIssueTypeSelect(issue.ng_issue_type_id)}
+                    </td>
+                    <td>
+                        ${generateIssueSubtypeSelect(issue.ng_issue_type_id, issue.ng_issue_subtype_id)}
                     </td>
                     <td>
                         <input type="text" class="form-control form-control-sm issue-title" value="${issue.title}">
