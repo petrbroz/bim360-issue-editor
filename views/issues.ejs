@@ -14,24 +14,29 @@
 </head>
 
 <body>
-    <nav class="navbar navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <a class="navbar-brand" href="/">
             <img src="/forge-logo-white.png" alt="Autodesk Forge">
             BIM360 Issues Editor
         </a>
-        <ol class="breadcrumb mr-auto">
-            <li class="breadcrumb-item" aria-current="page">
-                <a href="/<%= hub.id %>"><%= hub.name %></a>
-            </li>
-            <li class="breadcrumb-item active" aria-current="page">
-                <%= project.name %>
-            </li>
-        </ol>
-        <% if (!session || !session.access_token) { %>
-            <a class="btn btn-secondary" href="/auth/login">Login</a>
-        <% } else { %>
-            <a class="btn btn-secondary" href="/auth/logout">Logout (<%= session.user_name %>)</a>
-        <% } %>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle Navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbar-collapsible">
+            <ol class="breadcrumb mr-auto">
+                <li class="breadcrumb-item" aria-current="page">
+                    <a href="/<%= hub.id %>"><%= hub.name %></a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">
+                    <%= project.name %>
+                </li>
+            </ol>
+            <% if (!session || !session.access_token) { %>
+                <a class="btn btn-primary ml-auto" href="/auth/login">Login</a>
+            <% } else { %>
+                <a class="btn btn-secondary ml-auto" href="/auth/logout">Logout (<%= session.user_name %>)</a>
+            <% } %>
+        </div>
     </nav>
     <div id="container">
         <h4>Issues</h4>

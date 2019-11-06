@@ -9,8 +9,8 @@ body {
     font-family: Artifakt;
 }
 
-.navbar {
-    height: 64px;
+.navbar ol {
+    padding: 0;
 }
 
 .navbar-brand img {
