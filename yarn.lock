@@ -229,9 +229,10 @@ follow-redirects@1.5.10:
   dependencies:
     debug "=3.1.0"
 
-forge-server-utils@petrbroz/forge-server-utils#feature/bim360-locations:
-  version "8.0.3"
-  resolved "https://codeload.github.com/petrbroz/forge-server-utils/tar.gz/3b64e4d25a8b29fb3b28221c27421afbd5e6a23b"
+forge-server-utils@^8.0.4:
+  version "8.0.4"
+  resolved "https://registry.yarnpkg.com/forge-server-utils/-/forge-server-utils-8.0.4.tgz#e0fdbb7e9c0aaf8c9d87ac8a75ef7da6c31d6a6b"
+  integrity sha512-FI6Tas/yF1aUJLtfxsxPS4ji8tzCrIJ7s0z7msd1Kn9jJ2oouAEihyEkojH34xQHA5w+LGpKFOdcF6KOWzXMUQ==
   dependencies:
     "@types/adm-zip" "^0.4.32"
     "@types/fs-extra" "^8.0.0"
