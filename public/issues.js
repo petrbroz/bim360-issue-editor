@@ -1,22 +1,26 @@
 class IssueView {
-    constructor(accountClient, issueClient) {
+    constructor(accountClient, issueClient, locationClient) {
         this.accountClient = accountClient;
         this.issueClient = issueClient;
+        this.locationClient = locationClient;
         this.page = 0;
         this.pageSize = 15;
         this.users = [];
         this.issueTypes = [];
+        this.locations = [];
     }
 
     async init() {
         this.showSpinner('Initializing issues...');
         try {
-            const [users, issueTypes] = await Promise.all([
+            const [users, issueTypes, locations] = await Promise.all([
                 this.accountClient.listUsers(),
-                this.issueClient.listIssueTypes()
+                this.issueClient.listIssueTypes(),
+                this.locationClient.listLocations()
             ]);
             this.users = users;
             this.issueTypes = issueTypes;
+            this.locations = locations;
         } catch (err) {
             this.hideSpinner();
             $.notify('Could not initialize issues.\nSee console for more details.', 'error');
@@ -160,8 +164,15 @@ class IssueView {
             </select>
         `;
     
+        const generateLocationSelect = (locationId) => `
+            <select class="custom-select custom-select-sm issue-location">
+                <option value=""></option>
+                ${this.locations.map(location => `<option value="${location.id}" ${(location.id === locationId) ? 'selected' : ''}>${location.name}</option>`).join('\n')}
+            </select>
+        `;
+
         $('#pagination li.page-item.disabled span').text(`Issues ${this.page * this.pageSize + 1}-${(this.page + 1) * this.pageSize}`);
-    
+
         // Update the table
         for (const issue of issues) {
             $tbody.append(`
@@ -176,11 +187,11 @@ class IssueView {
                         <input type="text" class="form-control form-control-sm issue-title" value="${issue.title}">
                     </td>
                     <td>
-                        <input type="text" class="form-control form-control-sm" value="${issue.lbs_location /* is this the property we want? */}">
+                        ${generateLocationSelect(issue.lbs_location /* is this the property we want? */)}
                     </td>
-                    <td>
+                    <!--<td>
                         <input type="text" class="form-control form-control-sm" value="${issue.location_description /* is this the property we want? */}">
-                    </td>
+                    </td>-->
                     <td>
                         ${generateOwnerSelect(issue.owner)}
                     </td>
@@ -358,5 +369,32 @@ class AccountClient {
 
     async listUsers() {
         return this._get(`/users`);
+    }
+}
+
+class LocationClient {
+    constructor(issueContainerId) {
+        this.issueContainerId = issueContainerId;
+    }
+
+    async _get(endpoint = '', params = {}) {
+        const url = new URL(`/api/locations/${this.issueContainerId}` + endpoint, window.location.origin);
+        for (const key of Object.keys(params)) {
+            if (params[key]) {
+                url.searchParams.append(key, params[key]);
+            }
+        }
+        const response = await fetch(url.toString());
+        if (response.ok) {
+            const json = await response.json();
+            return json;
+        } else {
+            const message = await response.text();
+            throw new Error(message);
+        }
+    }
+
+    async listLocations() {
+        return this._get();
     }
 }

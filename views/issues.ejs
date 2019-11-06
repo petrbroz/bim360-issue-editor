@@ -56,8 +56,7 @@
                     <th style="width: 4em;">#</th>
                     <th>Type</th>
                     <th>Title</th>
-                    <th>Loc.</th>
-                    <th>D.Loc.</th>
+                    <th>Location</th>
                     <th>Owner</th>
                     <th>Affects</th>
                     <!-- <th>Attachments</th> -->
@@ -110,9 +109,13 @@
         });
     </script>
     <script src="/issues.js"></script>
-    <% if (container) { %>
+    <% if (account && issueContainer && locationContainer) { %>
         <script>
-            const issueView = new IssueView(new AccountClient('<%= account %>'), new IssueClient('<%= container %>'));
+            const issueView = new IssueView(
+                new AccountClient('<%= account %>'),
+                new IssueClient('<%= issueContainer %>'),
+                new LocationClient('<%= locationContainer %>')
+            );
             issueView.init();
         </script>
     <% } %>
