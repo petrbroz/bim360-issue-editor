@@ -55,13 +55,21 @@ router.get('/:hub', async function (req, res) {
 // GET /:hub/:project
 router.get('/:hub/:project', async function (req, res) {
     try {
-        let hub, project, container;
+        let hub, project, issueContainer, locationContainer;
         if (req.bim360) {
             hub = await req.bim360.getHubDetails(req.params.hub);
             project = await req.bim360.getProjectDetails(req.params.hub, req.params.project);
-            container = await req.bim360.getIssueContainerID(req.params.hub, req.params.project);
+            issueContainer = await req.bim360.getIssueContainerID(req.params.hub, req.params.project);
+            locationContainer = await req.bim360.getLocationContainerID(req.params.hub, req.params.project);
         }
-        res.render('issues', { session: req.session, hub: hub, project, container, account: req.params.hub.replace('b.', '') });
+        res.render('issues', {
+            session: req.session,
+            hub: hub,
+            project,
+            issueContainer,
+            locationContainer,
+            account: req.params.hub.replace('b.', '')
+        });
     } catch(err) {
         res.render('error', { session: req.session, error: err });
     }

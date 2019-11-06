@@ -229,10 +229,10 @@ follow-redirects@1.5.10:
   dependencies:
     debug "=3.1.0"
 
-forge-server-utils@^8.0.3:
-  version "8.0.3"
-  resolved "https://registry.yarnpkg.com/forge-server-utils/-/forge-server-utils-8.0.3.tgz#b0dbb9dd44cfd2451ddef74f469fd7204a2bd290"
-  integrity sha512-OEAceLfDFyYdd6ypr9/J8rkKFjNOrIakxpaGZA7bok6aglKSaXxGkUAsxBbnxPhNnNB4zOKXp+iJ32Cl+6xDmQ==
+forge-server-utils@^8.0.4:
+  version "8.0.4"
+  resolved "https://registry.yarnpkg.com/forge-server-utils/-/forge-server-utils-8.0.4.tgz#e0fdbb7e9c0aaf8c9d87ac8a75ef7da6c31d6a6b"
+  integrity sha512-FI6Tas/yF1aUJLtfxsxPS4ji8tzCrIJ7s0z7msd1Kn9jJ2oouAEihyEkojH34xQHA5w+LGpKFOdcF6KOWzXMUQ==
   dependencies:
     "@types/adm-zip" "^0.4.32"
     "@types/fs-extra" "^8.0.0"
