@@ -154,13 +154,13 @@ class IssueView {
 
         const generateIssueTypeSelect = (issueTypeId) => `
             <select class="custom-select custom-select-sm issue-type">
-                ${this.issueTypes.map(issueType => `<option value="${issueType.id}" ${(issueType.id === issueTypeId) ? 'selected' : ''}>${issueType.title}</option>`)}
+                ${this.issueTypes.map(issueType => `<option value="${issueType.id}" ${(issueType.id === issueTypeId) ? 'selected' : ''}>${issueType.title}</option>`).join('\n')}
             </select>
         `;
     
         const generateOwnerSelect = (ownerId) => `
             <select class="custom-select custom-select-sm issue-owner">
-                ${this.users.map(user => `<option value="${user.uid}" ${(user.uid === ownerId) ? 'selected' : ''}>${user.name}</option>`)}
+                ${this.users.map(user => `<option value="${user.uid}" ${(user.uid === ownerId) ? 'selected' : ''}>${user.name}</option>`).join('\n')}
             </select>
         `;
     
@@ -168,6 +168,12 @@ class IssueView {
             <select class="custom-select custom-select-sm issue-location">
                 <option value=""></option>
                 ${this.locations.map(location => `<option value="${location.id}" ${(location.id === locationId) ? 'selected' : ''}>${location.name}</option>`).join('\n')}
+            </select>
+        `;
+
+        const generateStatusSelect = (status) => `
+            <select class="custom-select custom-select-sm issue-status">
+                ${['draft', 'open', 'close'].map(_status => `<option value="${_status}" ${(_status === status) ? 'selected' : ''}>${_status}</option>`).join('\n')}
             </select>
         `;
 
@@ -208,11 +214,7 @@ class IssueView {
                         <input type="text" class="form-control form-control-sm issue-answer" value="${issue.answer}">
                     </td>
                     <td>
-                        <select class="custom-select custom-select-sm issue-status">
-                            <option value="draft" ${(issue.status === 'draft') ? 'selected' : ''}>Draft</option>
-                            <option value="open" ${(issue.status === 'open') ? 'selected' : ''}>Open</option>
-                            <option value="close" ${(issue.status === 'close') ? 'selected' : ''}>Close</option>
-                        </select>
+                        ${generateStatusSelect(issue.status)}
                     </td>
                     <!--<td>
                         <input type="text" class="form-control form-control-sm" value="${issue.comment_count}">
