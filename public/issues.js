@@ -38,15 +38,14 @@ class IssueView {
         // Enable buttons on rows that have been modified
         $tbody.on('change', (ev) => {
             const $target = $(ev.target);
-            const $button = $target.closest('tr').find('button');
-            $button.removeAttr('disabled');
+            $target.closest('tr').find('button.update-issue').removeAttr('disabled');
             $('#update-issues-button').removeAttr('disabled');
         });
 
         // Update issue when button in its row is clicked
         $tbody.on('click', (ev) => {
             const $target = $(ev.target);
-            if ($target.data('issue-id')) {
+            if ($target.hasClass('update-issue') && $target.data('issue-id')) {
                 const issueId = $target.data('issue-id');
                 const $tr = $target.closest('tr');
                 const attrs = {
@@ -61,7 +60,7 @@ class IssueView {
                     .then(function (issue) {
                         $target.closest('button').attr('disabled', true);
                         // If no other buttons are enabled, disable the "update all" button as well
-                        if ($('#issues-table button:enabled').length === 0) {
+                        if ($('#issues-table button.update-issue:enabled').length === 0) {
                             $('#update-issues-button').attr('disabled', true);
                         }
                         $.notify('Issue(s) successfully updated.', 'success');
@@ -193,40 +192,79 @@ class IssueView {
                         <input type="text" class="form-control form-control-sm issue-title" value="${issue.title}">
                     </td>
                     <td>
-                        ${generateLocationSelect(issue.lbs_location /* is this the property we want? */)}
+                        <input type="text" class="form-control form-control-sm issue-description" value="${issue.description}">
                     </td>
-                    <!--<td>
-                        <input type="text" class="form-control form-control-sm" value="${issue.location_description /* is this the property we want? */}">
-                    </td>-->
                     <td>
                         ${generateOwnerSelect(issue.owner)}
                     </td>
                     <td>
-                        <input type="text" class="form-control form-control-sm" value="${'' /* ? */}">
-                    </td>
-                    <!--<td>
-                        <input type="text" class="form-control form-control-sm" value="${issue.attachment_count}">
-                    </td>-->
-                    <td>
-                        <input type="text" class="form-control form-control-sm issue-description" value="${issue.description}">
-                    </td>
-                    <td>
-                        <input type="text" class="form-control form-control-sm issue-answer" value="${issue.answer}">
+                        ${generateLocationSelect(issue.lbs_location)}
                     </td>
                     <td>
                         ${generateStatusSelect(issue.status)}
                     </td>
-                    <!--<td>
-                        <input type="text" class="form-control form-control-sm" value="${issue.comment_count}">
-                    </td>-->
                     <td>
-                        <button type="button" data-issue-id="${issue.id}" class="btn btn-sm btn-outline-success" disabled>
-                            <i data-issue-id="${issue.id}" class="fas fa-cloud-upload-alt"></i>
+                        <input type="text" class="form-control form-control-sm issue-answer" value="${issue.answer}">
+                    </td>
+                    <td class="center">
+                        ${
+                            issue.comment_count
+                            ? `<button type="button" class="btn btn-outline-info btn-sm issue-comments" data-issue-id="${issue.id}" data-toggle="popover" title="Comments" data-content="Loading...">${issue.comment_count}</button>`
+                            : '0'
+                        }
+                    </td>
+                    <td class="center">
+                        ${
+                            issue.attachment_count
+                            ? `<button type="button" class="btn btn-outline-info btn-sm issue-attachments" data-issue-id="${issue.id}" data-toggle="popover" title="Attachments" data-content="Loading...">${issue.attachment_count}</button>`
+                            : '0'
+                        }
+                    </td>
+                    <td>
+                        <button type="button" data-issue-id="${issue.id}" class="btn btn-sm btn-success update-issue" disabled>
+                            <i data-issue-id="${issue.id}" class="fas fa-cloud-upload-alt update-issue"></i>
                         </button>
                     </td>
                 </tr>
             `);
         }
+
+        // Enable comments/attachments popovers where needed
+        const issueClient = this.issueClient;
+        $tbody.find('button.issue-comments').each(async function () {
+            const $this = $(this);
+            const issueId = $this.data('issue-id');
+            try {
+                const comments = await issueClient.listIssueComments(issueId);
+                const html = `
+                    <ul>
+                        ${comments.map(comment => `<li>[${new Date(comment.created_at).toLocaleString()}] ${comment.body}</li>`).join('\n')}
+                    </ul>
+                `;
+                $this.attr('data-content', html);
+            } catch(err) {
+                $this.attr('data-content', `Could not load comments: ${err}`);
+            } finally {
+                $this.popover({ html: true });
+            }
+        });
+        $tbody.find('button.issue-attachments').each(async function () {
+            const $this = $(this);
+            const issueId = $this.data('issue-id');
+            try {
+                const attachments = await issueClient.listIssueAttachments(issueId);
+                const html = `
+                    <ul>
+                        ${attachments.map(attachment => `<li>[${new Date(attachment.created_at).toLocaleString()}] <a target="_blank" href="${attachment.url}">${attachment.name}</a></li>`).join('\n')}
+                    </ul>
+                `;
+                $this.attr('data-content', html);
+            } catch(err) {
+                $this.attr('data-content', `Could not load attachments: ${err}`);
+            } finally {
+                $this.popover({ html: true });
+            }
+        });
     }
 
     showSpinner(message = 'Loading...') {
