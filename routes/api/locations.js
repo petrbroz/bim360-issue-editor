@@ -42,8 +42,15 @@ router.use('/', async function (req, res, next) {
 // GET /api/locations/:issue_container
 router.get('/:issue_container', async function (req, res) {
     const { issue_container } = req.params;
+    let page = null;
+    if (req.query.offset || req.query.limit) {
+        page = {
+            limit: parseInt(req.query.limit) || 64,
+            offset: parseInt(req.query.offset) || 0
+        };
+    }
     try {
-        const locations = await req.bim360.listLocationNodes(issue_container);
+        const locations = await req.bim360.listLocationNodes(issue_container, page);
         res.json(locations);
     } catch(err) {
         handleError(err, res);

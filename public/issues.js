@@ -468,6 +468,16 @@ class LocationClient {
     }
 
     async listLocations() {
-        return this._get();
+        // Download the locations in batch to prevent server timeout
+        const PageSize = 256
+        let offset = 0;
+        let results = [];
+        let locations = await this._get('', { offset, limit: PageSize })
+        while (locations.length > 0) {
+            results = results.concat(locations);
+            offset += PageSize;
+            locations = await this._get('', { offset, limit: PageSize })
+        }
+        return results;
     }
 }
