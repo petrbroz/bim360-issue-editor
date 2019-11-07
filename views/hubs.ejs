@@ -49,14 +49,16 @@
         <% } else { %>
             <h4>Hubs</h4>
             <% if (hubs.length > 0) { %>
-                <div class="card-deck">
+                <div class="row">
                     <% for (const hub of hubs) { %>
-                        <div class="card col-lg-3 col-md-6 col-sm-12">
-                            <img src="https://placeimg.com/320/180/arch?seed=<%= hub.id %>" class="card-img-top" alt="Hub <%= hub.name %>">
-                            <div class="card-body">
-                                <h5 class="card-title"><%= hub.name %></h5>
-                                <p class="card-text"><%= hub.id %></p>
-                                <a href="/<%= hub.id %>" class="card-link">View Projects</a>
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-3">
+                            <div class="card">
+                                <img src="https://placeimg.com/320/180/arch?seed=<%= hub.id %>" class="card-img-top" alt="Hub <%= hub.name %>">
+                                <div class="card-body">
+                                    <h5 class="card-title"><%= hub.name %></h5>
+                                    <p><small class="text-muted"><%= hub.id %></small></p>
+                                    <a href="/<%= hub.id %>" class="card-link">View Projects</a>
+                                </div>
                             </div>
                         </div>
                     <% } %>

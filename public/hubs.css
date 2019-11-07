@@ -5,3 +5,7 @@ body {
 #container {
     height: 100%;
 }
+
+.card {
+    margin-bottom: 1em;
+}

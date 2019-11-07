@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://petrbroz.github.io/forge-bootstrap-theme/forge-bootstrap-light.min.css">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <link rel="stylesheet" href="/main.css">
+    <link rel="stylesheet" href="/projects.css">
     <script src="https://kit.fontawesome.com/8309329604.js" crossorigin="anonymous"></script>
     <title>BIM360 Issue Editor</title>
 </head>
@@ -45,14 +46,16 @@
     </nav>
     <div id="container">
         <h4>Projects</h4>
-        <div class="card-deck">
+        <div class="row">
             <% for (const project of projects) { %>
-                <div class="card col-lg-3 col-md-6 col-sm-12">
-                    <img src="https://placeimg.com/320/180/arch?seed=<%= project.id %>" class="card-img-top" alt="Project <%= project.name %>">
-                    <div class="card-body">
-                        <h5 class="card-title"><%= project.name %></h5>
-                        <p class="card-text"><%= project.id %></p>
-                        <a href="/<%= hub.id %>/<%= project.id %>" class="card-link">View Issues</a>
+                <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-3">
+                    <div class="card">
+                        <img src="https://placeimg.com/320/180/arch?seed=<%= project.id %>" class="card-img-top" alt="Project <%= project.name %>">
+                        <div class="card-body">
+                            <h5 class="card-title"><%= project.name %></h5>
+                            <p><small class="text-muted"><%= project.id %></small></p>
+                            <a href="/<%= hub.id %>/<%= project.id %>" class="card-link">View Issues</a>
+                        </div>
                     </div>
                 </div>
             <% } %>
