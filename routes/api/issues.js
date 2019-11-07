@@ -1,5 +1,6 @@
 const express = require('express');
 const { AuthenticationClient, BIM360Client } = require('forge-server-utils');
+const axios = require('axios').default;
 const config = require('../../config');
 
 let authClient = new AuthenticationClient(config.client_id, config.client_secret);
@@ -150,6 +151,30 @@ router.get('/:issue_container/:issue/attachments', async function (req, res) {
     try {
         const attachments = await req.bim360.listIssueAttachments(issue_container, issue);
         res.json(attachments);
+    } catch(err) {
+        handleError(err, res);
+    }
+});
+
+// GET /api/issues/:issue_container/:issue/attachments/:id
+router.get('/:issue_container/:issue/attachments/:id', async function (req, res) {
+    const { issue_container, issue, id } = req.params;
+    try {
+        const attachments = await req.bim360.listIssueAttachments(issue_container, issue);
+        const match = attachments.find(attachment => attachment.id === id);
+        if (match) {
+            const options = {
+                responseType: 'arraybuffer',
+                headers: {
+                    'Authorization': 'Bearer ' + req.session.access_token
+                }
+            };
+            const response = await axios.get(match.url, options);
+            const extension = match.url.substr(match.url.lastIndexOf('.'));
+            res.type(extension).send(response.data);
+        } else {
+            res.status(404).end();
+        }
     } catch(err) {
         handleError(err, res);
     }

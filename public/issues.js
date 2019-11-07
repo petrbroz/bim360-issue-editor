@@ -273,6 +273,7 @@ class IssueView {
                 $this.popover({ html: true });
             }
         });
+        const issueContainerId = this.issueClient.issueContainerId;
         $tbody.find('button.issue-attachments').each(async function () {
             const $this = $(this);
             const issueId = $this.data('issue-id');
@@ -280,7 +281,19 @@ class IssueView {
                 const attachments = await issueClient.listIssueAttachments(issueId);
                 const html = `
                     <ul>
-                        ${attachments.map(attachment => `<li>[${new Date(attachment.created_at).toLocaleString()}] <a target="_blank" href="${attachment.url}">${attachment.name}</a></li>`).join('\n')}
+                        ${attachments.map(attachment => `
+                            <li>
+                                [${new Date(attachment.created_at).toLocaleString()}]
+                                <a target="_blank" href="/api/issues/${issueContainerId}/${issueId}/attachments/${attachment.id}">
+                                    <div>${attachment.name}</div>
+                                    ${
+                                        (attachment.name.toLowerCase().endsWith('.png') || attachment.name.toLowerCase().endsWith('.jpg') || attachment.name.toLowerCase().endsWith('.jpeg'))
+                                            ? `<img alt="Loading..." src="/api/issues/${issueContainerId}/${issueId}/attachments/${attachment.id}" width="64">`
+                                            : ''
+                                    }
+                                </a>
+                            </li>
+                        `).join('\n')}
                     </ul>
                 `;
                 $this.attr('data-content', html);
