@@ -196,7 +196,16 @@ class IssueView {
         const generateLocationSelect = (locationId) => `
             <select class="custom-select custom-select-sm issue-location" data-original-value="${locationId}">
                 <option value=""></option>
-                ${this.locations.map(location => `<option value="${location.id}" ${(location.id === locationId) ? 'selected' : ''}>${location.name}</option>`).join('\n')}
+                ${this.locations.map(location => {
+                    let name = location.name;
+                    let parentId = location.parentId;
+                    while (parentId) {
+                        const parent = this.locations.find(l => l.id === parentId);
+                        name = parent.name + ' > ' + name;
+                        parentId = parent.parentId;
+                    }
+                    return `<option value="${location.id}" ${(location.id === locationId) ? 'selected' : ''}>${name}</option>`;
+                }).join('\n')}
             </select>
         `;
 
