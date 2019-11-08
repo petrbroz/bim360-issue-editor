@@ -1,8 +1,9 @@
 class IssueView {
-    constructor(accountClient, issueClient, locationClient) {
+    constructor(accountClient, issueClient, locationClient, docsClient) {
         this.accountClient = accountClient;
         this.issueClient = issueClient;
         this.locationClient = locationClient;
+        this.docsClient = docsClient;
         this.page = 0;
         this.pageSize = 15;
         this.users = [];
@@ -529,5 +530,35 @@ class LocationClient {
             locations = await this._get('', { offset, limit: PageSize })
         }
         return results;
+    }
+}
+
+class DocsClient {
+    constructor(projectId, region) {
+        this.projectId = projectId;
+        this.region = region;
+    }
+
+    async _get(endpoint = '', params = {}) {
+        const url = new URL(`/api/docs/${this.projectId}` + endpoint, window.location.origin);
+        url.searchParams.append('region', this.region);
+        for (const key of Object.keys(params)) {
+            if (params[key]) {
+                url.searchParams.append(key, params[key]);
+            }
+        }
+        const response = await fetch(url.toString());
+        if (response.ok) {
+            const json = await response.json();
+            return json;
+        } else {
+            const message = await response.text();
+            throw new Error(message);
+        }
+    }
+
+    async getItemDetails(itemId) {
+        const details = await this._get(`/${itemId}`);
+        return details;
     }
 }

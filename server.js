@@ -20,6 +20,7 @@ app.use(session({
 }));
 app.use('/auth', require('./routes/auth'));
 app.use('/api/account', require('./routes/api/account'));
+app.use('/api/docs', require('./routes/api/docs'));
 app.use('/api/issues', require('./routes/api/issues'));
 app.use('/api/locations', require('./routes/api/locations'));
 app.use('/', require('./routes/index'));
