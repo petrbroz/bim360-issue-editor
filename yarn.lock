@@ -229,9 +229,10 @@ follow-redirects@1.5.10:
   dependencies:
     debug "=3.1.0"
 
-forge-server-utils@petrbroz/forge-server-utils#develop:
-  version "8.0.5"
-  resolved "https://codeload.github.com/petrbroz/forge-server-utils/tar.gz/ac075743df03cc991c478dccce7328dd6f5f2174"
+forge-server-utils@^8.0.6:
+  version "8.0.6"
+  resolved "https://registry.yarnpkg.com/forge-server-utils/-/forge-server-utils-8.0.6.tgz#157e4e27294b6677687fe08021e5be37256c48b1"
+  integrity sha512-1rv8kzbSf5DI/AHJzBA8Vk9IeQwEvKXI1ri+KQ6aLsIazPvQoag90EHeAXJfFJFZpYbz+JC1G3W7V20nKy0tEw==
   dependencies:
     "@types/adm-zip" "^0.4.32"
     "@types/fs-extra" "^8.0.0"
