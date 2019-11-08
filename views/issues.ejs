@@ -69,6 +69,7 @@
                     <th>Description</th>
                     <th style="width: 10em;">Owner</th>
                     <th style="width: 8em;">Location</th>
+                    <th style="width: 10em;">Document</th>
                     <th style="width: 6em;">Status</th>
                     <th>Answer</th>
                     <th class="center" style="width: 2em;"><i class="far fa-comments"></i></th>
@@ -126,7 +127,7 @@
                 new AccountClient('<%= account %>', region),
                 new IssueClient('<%= issueContainer %>', region),
                 new LocationClient('<%= locationContainer %>', region),
-                new DocsClient('<%= project %>', region)
+                new DocsClient('<%= project.id %>', region)
             );
             issueView.init();
         </script>

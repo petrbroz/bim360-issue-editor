@@ -244,6 +244,9 @@ class IssueView {
                         ${generateLocationSelect(issue.lbs_location)}
                     </td>
                     <td>
+                        <input type="text" class="form-control form-control-sm issue-document" data-target-urn="${issue.target_urn}" value="Loading..." disabled>
+                    </td>
+                    <td>
                         ${generateStatusSelect(issue.status)}
                     </td>
                     <td>
@@ -271,6 +274,31 @@ class IssueView {
                 </tr>
             `);
         }
+
+        // Retrieve details of all linked documents
+        let documentPromiseCache = new Map();
+        const docsClient = this.docsClient;
+        $tbody.find('input.issue-document').each(function () {
+            const $input = $(this);
+            const urn = $input.data('target-urn');
+            if (!urn || urn == 'null') {
+                $input.val('');
+                return;
+            }
+            if (!documentPromiseCache.has(urn)) {
+                documentPromiseCache.set(urn, docsClient.getItemDetails(urn));
+            }
+            const promise = documentPromiseCache.get(urn);
+            promise
+                .then(details => {
+                    $input.val(details.displayName);
+                })
+                .catch(err => {
+                    $.notify('Could not retrieve linked docs.\nSee console for more details.', 'error');
+                    console.error('Could not retrieve linked docs.', err);
+                    $input.val('');
+                });
+        });
 
         // Enable comments/attachments popovers where needed
         const issueClient = this.issueClient;
