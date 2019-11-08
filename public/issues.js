@@ -195,7 +195,7 @@ class IssueView {
 
         const generateStatusSelect = (status) => `
             <select class="custom-select custom-select-sm issue-status">
-                ${['draft', 'open', 'close'].map(_status => `<option value="${_status}" ${(_status === status) ? 'selected' : ''}>${_status}</option>`).join('\n')}
+                ${['draft', 'open', 'closed'].map(_status => `<option value="${_status}" ${(_status === status) ? 'selected' : ''}>${_status}</option>`).join('\n')}
             </select>
         `;
 
