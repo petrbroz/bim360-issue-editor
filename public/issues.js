@@ -63,10 +63,11 @@ class IssueView {
                 const attrs = {
                     title: $tr.find('input.issue-title').val(),
                     description: $tr.find('input.issue-description').val(),
-                    status: $tr.find('input.issue-status').val(),
-                    owner: $tr.find('input.issue-owner').val(),
+                    status: $tr.find('select.issue-status').val(),
+                    owner: $tr.find('select.issue-owner').val(),
                     answer: $tr.find('input.issue-answer').val(),
-                    ng_issue_type_id: $tr.find('input.issue-type').val()
+                    ng_issue_type_id: $tr.find('select.issue-type').val(),
+                    ng_issue_subtype_id: $tr.find('select.issue-subtype').val()
                 };
                 this.issueClient.updateIssue(issueId, attrs)
                     .then(function (issue) {
