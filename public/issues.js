@@ -12,21 +12,27 @@ class IssueView {
     }
 
     async init() {
-        this.showSpinner('Initializing issues...');
+        // Initialize issue owners and types
+        this.showSpinner('Initializing issue owners and types...');
         try {
-            const [users, issueTypes, locations] = await Promise.all([
+            const [users, issueTypes] = await Promise.all([
                 this.accountClient.listUsers(),
                 this.issueClient.listIssueTypes(),
-                this.locationClient.listLocations()
             ]);
             this.users = users;
             this.issueTypes = issueTypes;
-            this.locations = locations;
         } catch (err) {
             this.hideSpinner();
             $.notify('Could not initialize issues.\nSee console for more details.', 'error');
             console.error('Could not initialize issues.', err);
             return;
+        }
+        // Try initialize locations separately, and proceed even if they aren't available
+        try {
+            this.locations = await this.locationClient.listLocations();
+        } catch (err) {
+            $.notify('Could not obtain locations.\nForge application does not have access to this feature.', 'warning');
+            console.warn('Could not obtain locations.', err);
         }
         this.hideSpinner();
 
@@ -195,7 +201,7 @@ class IssueView {
         `;
 
         const generateLocationSelect = (locationId) => `
-            <select class="custom-select custom-select-sm issue-location" data-original-value="${locationId}">
+            <select class="custom-select custom-select-sm issue-location" data-original-value="${locationId}" ${this.locations.length === 0 ? 'style="display:none"' : ''}>
                 <option value=""></option>
                 ${this.locations.map(location => {
                     let name = location.name;
