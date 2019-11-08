@@ -271,7 +271,17 @@ class IssueView {
             } catch(err) {
                 $this.attr('data-content', `Could not load comments: ${err}`);
             } finally {
-                $this.popover({ html: true });
+                $this.popover({ html: true, trigger: 'manual' })
+                    .on('mouseenter', function () {
+                        const _this = this;
+                        $(this).popover('show');
+                        $('.popover').on('mouseleave', function () { $(_this).popover('hide'); });
+                    }).on('mouseleave', function () {
+                        const _this = this;
+                        setTimeout(function () {
+                            if (!$('.popover:hover').length) { $(_this).popover('hide'); }
+                        }, 300);
+                    });
             }
         });
         const issueContainerId = this.issueClient.issueContainerId;
@@ -301,7 +311,17 @@ class IssueView {
             } catch(err) {
                 $this.attr('data-content', `Could not load attachments: ${err}`);
             } finally {
-                $this.popover({ html: true });
+                $this.popover({ html: true, trigger: 'manual' })
+                    .on('mouseenter', function () {
+                        const _this = this;
+                        $(this).popover('show');
+                        $('.popover').on('mouseleave', function () { $(_this).popover('hide'); });
+                    }).on('mouseleave', function () {
+                        const _this = this;
+                        setTimeout(function () {
+                            if (!$('.popover:hover').length) { $(_this).popover('hide'); }
+                        }, 300);
+                    });
             }
         });
     }
