@@ -119,26 +119,38 @@ function fillIssues(worksheet, issues, types, users, locations, documents) {
                     issueTypeID = issueType.id;
                     issueTypeName = issueType.title;
                     issueSubtypeName = issueSubtype.title;
-                    break;
+                    return encodeNameID(`${issueTypeName} > ${issueSubtypeName}`, `${issueTypeID},${issueSubtypeID}`);
                 }
             }
         }
-        return issueTypeName ? `${issueTypeName} > ${issueSubtypeName} [${issueTypeID},${issueSubtypeID}]` : '';
+        return '';
     };
 
     const IssueOwnerFormat = (ownerID) => {
         const user = users.find(u => u.uid === ownerID);
-        return user ? `${user.name} [${user.uid}]` : '';
+        if (user) {
+            return encodeNameID(user.name, user.uid);
+        } else {
+            return '';
+        }
     };
 
     const IssueLocationFormat = (locationID) => {
         const location = locations.find(l => l.id === locationID);
-        return location ? `${location.name} [${location.id}]` : '';
+        if (location) {
+            return encodeNameID(location.name, location.id);
+        } else {
+            return '';
+        }
     };
 
     const IssueDocumentFormat = (documentID) => {
         const document = documents.find(d => d.id === documentID);
-        return document ? `${document.displayName} [${document.id}]` : '';
+        if (document) {
+            return encodeNameID(document.displayName, document.id);
+        } else {
+            return '';
+        }
     };
 
     const IssueStatusValidation = {
@@ -227,7 +239,7 @@ function fillIssueTypes(worksheet, issueTypes) {
                 'type-name': issueType.title,
                 'subtype-id': issueSubtype.id,
                 'subtype-name': issueSubtype.title,
-                'type-full': `${issueType.title} > ${issueSubtype.title} [${issueType.id},${issueSubtype.id}]`
+                'type-full': encodeNameID(`${issueType.title} > ${issueSubtype.title}`, `${issueType.id},${issueSubtype.id}`)
             });
         }
     }
@@ -253,7 +265,7 @@ function fillIssueOwners(worksheet, users) {
         worksheet.addRow({
             'user-id': user.uid,
             'user-name': user.name,
-            'user-full': `${user.name} [${user.uid}]`
+            'user-full': encodeNameID(user.name, user.uid)
         });
     }
 
@@ -280,7 +292,7 @@ function fillIssueLocations(worksheet, locations) {
             'location-id': location.id,
             'location-parent-id': location.parentId,
             'location-name': location.name,
-            'location-full': `${location.name} [${location.id}]`
+            'location-full': encodeNameID(location.name, location.id)
         });
     }
 
@@ -305,7 +317,7 @@ function fillIssueDocuments(worksheet, documents) {
         worksheet.addRow({
             'document-urn': item.id,
             'document-name': item.displayName,
-            'document-full': `${item.displayName} [${item.id}]`
+            'document-full': encodeNameID(item.displayName, item.id)
         });
     }
 
@@ -317,6 +329,15 @@ function fillIssueDocuments(worksheet, documents) {
             };
         });
     }
+}
+
+function encodeNameID(name, id) {
+    return {
+        'richText': [
+            { 'text': `${name}` },
+            { 'text': ` [${id}]`, font: { 'color': { 'argb': 'FFCCCCCC' } } }
+        ]
+    };
 }
 
 module.exports = {
