@@ -275,10 +275,10 @@ class IssueView {
                         ${generateIssueSubtypeSelect(issue.ng_issue_type_id, issue.ng_issue_subtype_id)}
                     </td>
                     <td>
-                        <input type="text" class="form-control form-control-sm issue-title" data-original-value="${issue.title}" value="${issue.title}">
+                        <input type="text" class="form-control form-control-sm issue-title" data-original-value="${issue.title || ''}" value="${issue.title || ''}">
                     </td>
                     <td>
-                        <input type="text" class="form-control form-control-sm issue-description" data-original-value="${issue.description}" value="${issue.description}">
+                        <input type="text" class="form-control form-control-sm issue-description" data-original-value="${issue.description || ''}" value="${issue.description || ''}">
                     </td>
                     <td>
                         ${generateOwnerSelect(issue.owner)}
@@ -293,7 +293,7 @@ class IssueView {
                         ${generateStatusSelect(issue.status)}
                     </td>
                     <td>
-                        <input type="text" class="form-control form-control-sm issue-answer" data-original-value="${issue.answer}" value="${issue.answer}">
+                        <input type="text" class="form-control form-control-sm issue-answer" data-original-value="${issue.answer || ''}" value="${issue.answer || ''}">
                     </td>
                     <td class="center">
                         ${
