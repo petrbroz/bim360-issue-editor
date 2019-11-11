@@ -169,6 +169,12 @@ function fillIssues(worksheet, issues, types, users, locations, documents) {
         }
     };
 
+    const IssueTypeValidation = {
+        type: 'list',
+        allowBlank: false,
+        formulae: ['Types!E:E']
+    };
+
     const IssueStatusValidation = {
         type: 'list',
         allowBlank: false,
@@ -195,7 +201,7 @@ function fillIssues(worksheet, issues, types, users, locations, documents) {
 
     const IssueColumns = [
         { id: 'id',             propertyName: 'identifier',             columnTitle: 'ID',          columnWidth: 8,     locked: true },
-        { id: 'type',           propertyName: 'ng_issue_subtype_id',    columnTitle: 'Type',        columnWidth: 16,    locked: true,   format: IssueTypeFormat },
+        { id: 'type',           propertyName: 'ng_issue_subtype_id',    columnTitle: 'Type',        columnWidth: 16,    locked: true,   format: IssueTypeFormat,        validation: IssueTypeValidation },
         { id: 'title',          propertyName: 'title',                  columnTitle: 'Title',       columnWidth: 32,    locked: false },
         { id: 'description',    propertyName: 'description',            columnTitle: 'Description', columnWidth: 32,    locked: false },
         { id: 'owner',          propertyName: 'owner',                  columnTitle: 'Owner',       columnWidth: 16,    locked: true,   format: IssueOwnerFormat,       validation: IssueOwnerValidation },
