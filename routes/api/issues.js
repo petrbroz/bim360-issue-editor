@@ -83,7 +83,7 @@ router.get('/:issue_container', async function (req, res) {
 // GET /api/issues/:issue_container/export
 router.get('/:issue_container/export', async function (req, res) {
     const { issue_container } = req.params;
-    const { hub_id, region, location_container_id, project_id } = req.query;
+    const { hub_id, region, location_container_id, project_id, offset, limit } = req.query;
     try {
         const excel = await exportIssues({
             client_id: config.client_id,
@@ -93,7 +93,9 @@ router.get('/:issue_container/export', async function (req, res) {
             hub_id: hub_id,
             issue_container_id: issue_container,
             location_container_id: location_container_id,
-            project_id: project_id
+            project_id: project_id,
+            page_offset: offset,
+            page_limit: limit
         });
         res.type('.xlsx').send(excel);
     } catch(err) {

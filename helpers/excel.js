@@ -13,6 +13,8 @@ const ExcelJS = require('exceljs');
  * @param {string} opts.project_id BIM360 project ID.
  * @param {string} opts.issue_container_id BIM360 issues container ID.
  * @param {string} opts.location_container_id BIM360 locations container ID.
+ * @param {number} [opts.page_offset] Offset of the issue page to export.
+ * @param {number} [opts.page_limit] Length of the issue page to export.
  * @returns {Promise<Buffer>} XLSX spreadsheet serialized into buffer.
  */
 async function exportIssues(opts) {
@@ -24,14 +26,16 @@ async function exportIssues(opts) {
         hub_id,
         project_id,
         issue_container_id,
-        location_container_id
+        location_container_id,
+        page_offset,
+        page_limit
     } = opts;
     const appContextBIM360 = new BIM360Client({ client_id, client_secret }, undefined, region);
     const userContextBIM360 = new BIM360Client({ token: three_legged_token }, undefined, region);
 
     console.log('Fetching BIM360 data for export.');
     const [issues, types, users, locations, documents] = await Promise.all([
-        loadIssues(userContextBIM360, issue_container_id),
+        loadIssues(userContextBIM360, issue_container_id, page_offset, page_limit),
         loadIssueTypes(userContextBIM360, issue_container_id),
         loadUsers(appContextBIM360, hub_id.replace('b.', '')),
         loadLocations(userContextBIM360, location_container_id),
@@ -49,10 +53,13 @@ async function exportIssues(opts) {
     return buffer;
 }
 
-async function loadIssues(bim360, issueContainerID) {
-    let page = { offset: 0, limit: 128 };
+async function loadIssues(bim360, issueContainerID, offset, limit) {
+    let page = { offset: offset || 0, limit: limit || 128 };
     console.log('Fetching BIM360 issues page:', page);
     let issues = await bim360.listIssues(issueContainerID, {}, page);
+    if ((typeof offset !== 'undefined') || (typeof limit !== 'undefined')) {
+        return issues;
+    }
     let results = [];
     while (issues.length > 0) {
         results = results.concat(issues);
