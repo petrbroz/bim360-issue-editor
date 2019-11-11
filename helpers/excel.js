@@ -29,6 +29,7 @@ async function exportIssues(opts) {
     const appContextBIM360 = new BIM360Client({ client_id, client_secret }, undefined, region);
     const userContextBIM360 = new BIM360Client({ token: three_legged_token }, undefined, region);
 
+    console.log('Fetching BIM360 data for export.');
     const [issues, types, users, locations, documents] = await Promise.all([
         loadIssues(userContextBIM360, issue_container_id),
         loadIssueTypes(userContextBIM360, issue_container_id),
@@ -36,6 +37,7 @@ async function exportIssues(opts) {
         loadLocations(userContextBIM360, location_container_id),
         loadDocuments(userContextBIM360, hub_id, project_id)
     ]);
+    console.log('Generating XLSX spreadsheet.');
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'bim360-issue-editor';
     fillIssues(workbook.addWorksheet('Issues'), issues, types, users, locations, documents);
@@ -49,22 +51,26 @@ async function exportIssues(opts) {
 
 async function loadIssues(bim360, issueContainerID) {
     let page = { offset: 0, limit: 128 };
+    console.log('Fetching BIM360 issues page:', page);
     let issues = await bim360.listIssues(issueContainerID, {}, page);
     let results = [];
     while (issues.length > 0) {
         results = results.concat(issues);
         page.offset += issues.length;
+        console.log('Fetching BIM360 issues page:', page);
         issues = await bim360.listIssues(issueContainerID, {}, page);
     }
     return results;
 }
 
 async function loadIssueTypes(bim360, issueContainerID) {
+    console.log('Fetching BIM360 issue types.');
     const issueTypes = await bim360.listIssueTypes(issueContainerID, true);
     return issueTypes;
 }
 
 async function loadUsers(bim360, accountId) {
+    console.log('Fetching BIM360 users.');
     const users = await bim360.listUsers(accountId);
     return users;
 }
@@ -73,11 +79,13 @@ async function loadLocations(bim360, locationContainerID) {
     let results = [];
     try {
         let page = { offset: 0, limit: 128 };
+        console.log('Fetching BIM360 locations page:', page);
         let locations = await bim360.listLocationNodes(locationContainerID, page);
         while (locations.length > 0) {
             results = results.concat(locations);
-            page.offset += locations.length;  
-            locations = bim360.listLocationNodes(locationContainerID, page); 
+            page.offset += locations.length;
+            console.log('Fetching BIM360 locations page:', page);
+            locations = await bim360.listLocationNodes(locationContainerID, page); 
         }
     } catch(err) {
         console.warn('Could not load BIM360 locations. The "Locations" worksheet will be empty.');
@@ -104,6 +112,7 @@ async function loadDocuments(bim360, hubId, projectId) {
         await Promise.all(subtasks);
     }
 
+    console.log('Fetching BIM360 documents');
     const folders = await bim360.listTopFolders(hubId, projectId);
     const tasks = folders.map(folder => fillIssues(folder.id));
     await Promise.all(tasks);
