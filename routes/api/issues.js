@@ -2,6 +2,7 @@ const express = require('express');
 const { AuthenticationClient, BIM360Client } = require('forge-server-utils');
 const axios = require('axios').default;
 const config = require('../../config');
+const { exportIssues } = require('../../helpers/excel');
 
 let authClient = new AuthenticationClient(config.client_id, config.client_secret);
 let router = express.Router();
@@ -73,6 +74,27 @@ router.get('/:issue_container', async function (req, res) {
 
         const issues = await req.bim360.listIssues(issue_container, filter, page);
         res.json(issues);
+    } catch(err) {
+        handleError(err, res);
+    }
+});
+
+// GET /api/issues/:issue_container/export
+router.get('/:issue_container/export', async function (req, res) {
+    const { issue_container } = req.params;
+    const { hub_id, region, location_container_id, project_id } = req.query;
+    try {
+        const excel = await exportIssues({
+            client_id: config.client_id,
+            client_secret: config.client_secret,
+            three_legged_token: req.session.access_token,
+            region: region,
+            hub_id: hub_id,
+            issue_container_id: issue_container,
+            location_container_id: location_container_id,
+            project_id: project_id
+        });
+        res.type('.xlsx').send(excel);
     } catch(err) {
         handleError(err, res);
     }

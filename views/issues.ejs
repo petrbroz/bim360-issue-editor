@@ -80,7 +80,7 @@
         </table>
     </div>
     <div class="fixed-bottom bg-light">
-        <nav class="mr-auto">
+        <nav class="">
             <ul id="pagination" class="pagination pagination-sm">
                 <li class="page-item">
                     <a id="prev-page-link" class="page-link" href="#" aria-label="Previous">
@@ -101,6 +101,9 @@
                 </li>
             </ul>
         </nav>
+        <a href="/api/issues/<%= issueContainer %>/export?hub_id=<%= hub.id %>&region=<%= hub.region %>&location_container_id=<%= locationContainer %>&project_id=<%= project.id %>" target="_blank" class="btn btn-sm btn-light ml-2 mr-auto">
+            <i class="fas fa-file-import"></i> Export Issues
+        </a>
         <button type="button" id="update-issues-button" class="btn btn-sm btn-success" disabled>
             <i class="fas fa-cloud-upload-alt"></i> Update Issues
         </button>
