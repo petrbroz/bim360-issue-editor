@@ -215,30 +215,30 @@ class IssueView {
             this.hideSpinner();
         }
 
-        const generateIssueTypeSelect = (issueTypeId) => `
-            <select class="custom-select custom-select-sm issue-type" data-original-value="${issueTypeId}">
-                ${this.issueTypes.map(issueType => `<option value="${issueType.id}" ${(issueType.id === issueTypeId) ? 'selected' : ''}>${issueType.title}</option>`).join('\n')}
+        const generateIssueTypeSelect = (issue) => `
+            <select class="custom-select custom-select-sm issue-type" data-original-value="${issue.ng_issue_type_id}">
+                ${this.issueTypes.map(issueType => `<option value="${issueType.id}" ${(issueType.id === issue.ng_issue_type_id) ? 'selected' : ''}>${issueType.title}</option>`).join('\n')}
             </select>
         `;
 
-        const generateIssueSubtypeSelect = (issueTypeId, issueSubtypeId) => {
-            const issueType = this.issueTypes.find(it => it.id === issueTypeId);
+        const generateIssueSubtypeSelect = (issue) => {
+            const issueType = this.issueTypes.find(it => it.id === issue.ng_issue_type_id);
             const issueSubtypes = issueType ? issueType.subtypes : [];
             return `
-                <select class="custom-select custom-select-sm issue-subtype" data-original-value="${issueSubtypeId}">
-                    ${issueSubtypes.map(issueSubtype => `<option value="${issueSubtype.id}" ${(issueSubtype.id === issueSubtypeId) ? 'selected' : ''}>${issueSubtype.title}</option>`).join('\n')}
+                <select class="custom-select custom-select-sm issue-subtype" data-original-value="${issue.ng_issue_subtype_id}">
+                    ${issueSubtypes.map(issueSubtype => `<option value="${issueSubtype.id}" ${(issueSubtype.id === issue.ng_issue_subtype_id) ? 'selected' : ''}>${issueSubtype.title}</option>`).join('\n')}
                 </select>
             `;
         };
 
-        const generateOwnerSelect = (ownerId) => `
-            <select class="custom-select custom-select-sm issue-owner" data-original-value="${ownerId}">
-                ${this.users.map(user => `<option value="${user.uid}" ${(user.uid === ownerId) ? 'selected' : ''}>${user.name}</option>`).join('\n')}
+        const generateOwnerSelect = (issue) => `
+            <select class="custom-select custom-select-sm issue-owner" data-original-value="${issue.owner}">
+                ${this.users.map(user => `<option value="${user.uid}" ${(user.uid === issue.owner) ? 'selected' : ''}>${user.name}</option>`).join('\n')}
             </select>
         `;
 
-        const generateLocationSelect = (locationId) => `
-            <select class="custom-select custom-select-sm issue-location" data-original-value="${locationId}" ${this.locations.length === 0 ? 'style="display:none"' : ''}>
+        const generateLocationSelect = (issue) => `
+            <select class="custom-select custom-select-sm issue-location" data-original-value="${issue.lbs_location}" ${this.locations.length === 0 ? 'style="display:none"' : ''}>
                 <option value=""></option>
                 ${this.locations.map(location => {
                     let name = location.name;
@@ -248,14 +248,14 @@ class IssueView {
                         name = parent.name + ' > ' + name;
                         parentId = parent.parentId;
                     }
-                    return `<option value="${location.id}" ${(location.id === locationId) ? 'selected' : ''}>${name}</option>`;
+                    return `<option value="${location.id}" ${(location.id === issue.lbs_location) ? 'selected' : ''}>${name}</option>`;
                 }).join('\n')}
             </select>
         `;
 
-        const generateStatusSelect = (status) => `
-            <select class="custom-select custom-select-sm issue-status" data-original-value="${status}">
-                ${['draft', 'open', 'closed'].map(_status => `<option value="${_status}" ${(_status === status) ? 'selected' : ''}>${_status}</option>`).join('\n')}
+        const generateStatusSelect = (issue) => `
+            <select class="custom-select custom-select-sm issue-status" data-original-value="${issue.status}">
+                ${['draft', 'open', 'closed'].map(_status => `<option value="${_status}" ${(_status === issue.status) ? 'selected' : ''}>${_status}</option>`).join('\n')}
             </select>
         `;
 
@@ -269,10 +269,10 @@ class IssueView {
                         ${issue.identifier}
                     </td>
                     <td>
-                        ${generateIssueTypeSelect(issue.ng_issue_type_id)}
+                        ${generateIssueTypeSelect(issue)}
                     </td>
                     <td>
-                        ${generateIssueSubtypeSelect(issue.ng_issue_type_id, issue.ng_issue_subtype_id)}
+                        ${generateIssueSubtypeSelect(issue)}
                     </td>
                     <td>
                         <input type="text" class="form-control form-control-sm issue-title" data-original-value="${issue.title || ''}" value="${issue.title || ''}">
@@ -281,16 +281,16 @@ class IssueView {
                         <input type="text" class="form-control form-control-sm issue-description" data-original-value="${issue.description || ''}" value="${issue.description || ''}">
                     </td>
                     <td>
-                        ${generateOwnerSelect(issue.owner)}
+                        ${generateOwnerSelect(issue)}
                     </td>
                     <td>
-                        ${generateLocationSelect(issue.lbs_location)}
+                        ${generateLocationSelect(issue)}
                     </td>
                     <td>
                         <input type="text" class="form-control form-control-sm issue-document" data-target-urn="${issue.target_urn}" value="Loading..." disabled>
                     </td>
                     <td>
-                        ${generateStatusSelect(issue.status)}
+                        ${generateStatusSelect(issue)}
                     </td>
                     <td>
                         <input type="text" class="form-control form-control-sm issue-answer" data-original-value="${issue.answer || ''}" value="${issue.answer || ''}">
