@@ -29,36 +29,151 @@ async function exportIssues(opts) {
     const appContextBIM360 = new BIM360Client({ client_id, client_secret }, undefined, region);
     const userContextBIM360 = new BIM360Client({ token: three_legged_token }, undefined, region);
 
+    const [issues, types, users, locations, documents] = await Promise.all([
+        loadIssues(userContextBIM360, issue_container_id),
+        loadIssueTypes(userContextBIM360, issue_container_id),
+        loadUsers(appContextBIM360, hub_id.replace('b.', '')),
+        loadLocations(userContextBIM360, location_container_id),
+        loadDocuments(userContextBIM360, hub_id, project_id)
+    ]);
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'bim360-issue-editor';
-    await Promise.all([
-        fillIssues(workbook.addWorksheet('Issues'), userContextBIM360, issue_container_id),
-        fillIssueTypes(workbook.addWorksheet('Types'), userContextBIM360, issue_container_id),
-        fillIssueOwners(workbook.addWorksheet('Owners'), appContextBIM360, hub_id.replace('b.', '')),
-        fillIssueLocations(workbook.addWorksheet('Locations'), userContextBIM360, location_container_id),
-        fillIssueDocuments(workbook.addWorksheet('Documents'), userContextBIM360, hub_id, project_id)
-    ]);
+    fillIssues(workbook.addWorksheet('Issues'), issues, types, users, locations, documents);
+    fillIssueTypes(workbook.addWorksheet('Types'), types);
+    fillIssueOwners(workbook.addWorksheet('Owners'), users);
+    fillIssueLocations(workbook.addWorksheet('Locations'), locations);
+    fillIssueDocuments(workbook.addWorksheet('Documents'), documents);
     const buffer = await workbook.xlsx.writeBuffer();
     return buffer;
 }
 
-async function fillIssues(worksheet, bim360,  issueContainerID) {
+async function loadIssues(bim360, issueContainerID) {
+    let page = { offset: 0, limit: 128 };
+    let issues = await bim360.listIssues(issueContainerID, {}, page);
+    let results = [];
+    while (issues.length > 0) {
+        results = results.concat(issues);
+        page.offset += issues.length;
+        issues = await bim360.listIssues(issueContainerID, {}, page);
+    }
+    return results;
+}
+
+async function loadIssueTypes(bim360, issueContainerID) {
+    const issueTypes = await bim360.listIssueTypes(issueContainerID, true);
+    return issueTypes;
+}
+
+async function loadUsers(bim360, accountId) {
+    const users = await bim360.listUsers(accountId);
+    return users;
+}
+
+async function loadLocations(bim360, locationContainerID) {
+    let results = [];
+    try {
+        let page = { offset: 0, limit: 128 };
+        let locations = await bim360.listLocationNodes(locationContainerID, page);
+        while (locations.length > 0) {
+            results = results.concat(locations);
+            page.offset += locations.length;  
+            locations = bim360.listLocationNodes(locationContainerID, page); 
+        }
+    } catch(err) {
+        console.warn('Could not load BIM360 locations. The "Locations" worksheet will be empty.');
+    }
+    return results;
+}
+
+async function loadDocuments(bim360, hubId, projectId) {
+    let results = [];
+
+    async function fillIssues(folderId) {
+        const items = await bim360.listContents(projectId, folderId);
+        for (const item of items) {
+            switch (item.type) {
+                case 'items':
+                    results.push(item);
+                    break;
+                case 'folders':
+                    await fillIssues(item.id);
+                    break;
+            }
+        }
+    }
+
+    const folders = await bim360.listTopFolders(hubId, projectId);
+    for (const folder of folders) {
+        await fillIssues(folder.id);
+    }
+
+    return results;
+}
+
+function fillIssues(worksheet, issues, types, users, locations, documents) {
+    const IssueTypeFormat = (issueSubtypeID) => {
+        let issueTypeID, issueTypeName, issueSubtypeName;
+        for (const issueType of types) {
+            for (const issueSubtype of issueType.subtypes) {
+                if (issueSubtype.id === issueSubtypeID) {
+                    issueTypeID = issueType.id;
+                    issueTypeName = issueType.title;
+                    issueSubtypeName = issueSubtype.title;
+                    break;
+                }
+            }
+        }
+        return issueTypeName ? `${issueTypeName} > ${issueSubtypeName} [${issueTypeID},${issueSubtypeID}]` : '';
+    };
+
+    const IssueOwnerFormat = (ownerID) => {
+        const user = users.find(u => u.uid === ownerID);
+        return user ? `${user.name} [${user.uid}]` : '';
+    };
+
+    const IssueLocationFormat = (locationID) => {
+        const location = locations.find(l => l.id === locationID);
+        return location ? `${location.name} [${location.id}]` : '';
+    };
+
+    const IssueDocumentFormat = (documentID) => {
+        const document = documents.find(d => d.id === documentID);
+        return document ? `${document.displayName} [${document.id}]` : '';
+    };
+
     const IssueStatusValidation = {
         type: 'list',
         allowBlank: false,
         formulae: ['"void,draft,open,closed"']
     };
 
+    const IssueOwnerValidation = {
+        type: 'list',
+        allowBlank: false,
+        formulae: ['Owners!C:C']
+    };
+
+    const IssueLocationValidation = {
+        type: 'list',
+        allowBlank: false,
+        formulae: ['Locations!D:D']
+    };
+
+    const IssueDocumentValidation = {
+        type: 'list',
+        allowBlank: false,
+        formulae: ['Documents!C:C']
+    };
+
     const IssueColumns = [
         { id: 'id',             propertyName: 'identifier',             columnTitle: 'ID',          columnWidth: 8,     locked: true },
-        { id: 'type',           propertyName: 'ng_issue_type_id',       columnTitle: 'Type',        columnWidth: 16,    locked: true },
-        { id: 'subtype',        propertyName: 'ng_issue_subtype_id',    columnTitle: 'Subtype',     columnWidth: 16,    locked: true },
+        { id: 'type',           propertyName: 'ng_issue_subtype_id',    columnTitle: 'Type',        columnWidth: 16,    locked: true,   format: IssueTypeFormat },
         { id: 'title',          propertyName: 'title',                  columnTitle: 'Title',       columnWidth: 32,    locked: false },
         { id: 'description',    propertyName: 'description',            columnTitle: 'Description', columnWidth: 32,    locked: false },
-        { id: 'owner',          propertyName: 'owner',                  columnTitle: 'Owner',       columnWidth: 16,    locked: true },
-        { id: 'location',       propertyName: 'lbs_location',           columnTitle: 'Location',    columnWidth: 16,    locked: true },
-        { id: 'document',       propertyName: 'target_urn',             columnTitle: 'Document',    columnWidth: 32,    locked: true },
-        { id: 'status',         propertyName: 'status',                 columnTitle: 'Status',      columnWidth: 16,    locked: false,  validation: IssueStatusValidation },
+        { id: 'owner',          propertyName: 'owner',                  columnTitle: 'Owner',       columnWidth: 16,    locked: true,   format: IssueOwnerFormat,       validation: IssueOwnerValidation },
+        { id: 'location',       propertyName: 'lbs_location',           columnTitle: 'Location',    columnWidth: 16,    locked: true,   format: IssueLocationFormat,    validation: IssueLocationValidation },
+        { id: 'document',       propertyName: 'target_urn',             columnTitle: 'Document',    columnWidth: 32,    locked: true,   format: IssueDocumentFormat,    validation: IssueDocumentValidation },
+        { id: 'status',         propertyName: 'status',                 columnTitle: 'Status',      columnWidth: 16,    locked: false,                                  validation: IssueStatusValidation },
         { id: 'answer',         propertyName: 'answer',                 columnTitle: 'Answer',      columnWidth: 32,    locked: false },
         { id: 'comments',       propertyName: 'comment_count',          columnTitle: 'Comments',    columnWidth: 8,     locked: true },
         { id: 'attachments',    propertyName: 'attachment_count',       columnTitle: 'Attachments', columnWidth: 8,     locked: true }
@@ -67,19 +182,16 @@ async function fillIssues(worksheet, bim360,  issueContainerID) {
     worksheet.columns = IssueColumns.map(col => {
         return { key: col.id, header: col.columnTitle, width: col.columnWidth };
     });
-
-    let page = { offset: 0, limit: 128 };
-    let issues = await bim360.listIssues(issueContainerID, {}, page);
-    while (issues.length > 0) {
-        for (const issue of issues) {
-            let row = {};
-            for (const column of IssueColumns) {
+    for (const issue of issues) {
+        let row = {};
+        for (const column of IssueColumns) {
+            if (column.format) {
+                row[column.id] = column.format(issue[column.propertyName]);
+            } else {
                 row[column.id] = issue[column.propertyName];
             }
-            worksheet.addRow(row);
         }
-        page.offset += issues.length;
-        issues = await bim360.listIssues(issueContainerID, {}, page);
+        worksheet.addRow(row);
     }
 
     // Setup data validation and protection where needed
@@ -99,22 +211,23 @@ async function fillIssues(worksheet, bim360,  issueContainerID) {
     }
 }
 
-async function fillIssueTypes(worksheet, bim360,  issueContainerID) {
+function fillIssueTypes(worksheet, issueTypes) {
     worksheet.columns = [
         { key: 'type-id', header: 'Type ID', width: 16 },
         { key: 'type-name', header: 'Type Name', width: 32 },
         { key: 'subtype-id', header: 'Subtype ID', width: 16 },
         { key: 'subtype-name', header: 'Subtype Name', width: 32 },
+        { key: 'type-full', header: '', width: 64 } // Full representation to show in the "issues" worksheet (that can be later decoded back into IDs)
     ];
 
-    const issueTypes = await bim360.listIssueTypes(issueContainerID, true);
     for (const issueType of issueTypes) {
         for (const issueSubtype of issueType.subtypes) {
             worksheet.addRow({
                 'type-id': issueType.id,
                 'type-name': issueType.title,
                 'subtype-id': issueSubtype.id,
-                'subtype-name': issueSubtype.title
+                'subtype-name': issueSubtype.title,
+                'type-full': `${issueType.title} > ${issueSubtype.title} [${issueType.id},${issueSubtype.id}]`
             });
         }
     }
@@ -129,17 +242,18 @@ async function fillIssueTypes(worksheet, bim360,  issueContainerID) {
     }
 }
 
-async function fillIssueOwners(worksheet, bim360, accountId) {
+function fillIssueOwners(worksheet, users) {
     worksheet.columns = [
         { key: 'user-id', header: 'User ID', width: 16 },
-        { key: 'user-name', header: 'User Name', width: 32 }
+        { key: 'user-name', header: 'User Name', width: 32 },
+        { key: 'user-full', header: '', width: 64 } // Full representation to show in the "issues" worksheet (that can be later decoded back into IDs)
     ];
 
-    const users = await bim360.listUsers(accountId);
     for (const user of users) {
         worksheet.addRow({
             'user-id': user.uid,
-            'user-name': user.name
+            'user-name': user.name,
+            'user-full': `${user.name} [${user.uid}]`
         });
     }
 
@@ -153,29 +267,21 @@ async function fillIssueOwners(worksheet, bim360, accountId) {
     }
 }
 
-async function fillIssueLocations(worksheet, bim360, locationContainerID) {
+function fillIssueLocations(worksheet, locations) {
     worksheet.columns = [
         { key: 'location-id', header: 'Location ID', width: 16 },
         { key: 'location-parent-id', header: 'Parent ID', width: 16 },
-        { key: 'location-name', header: 'Location Name', width: 32 }
+        { key: 'location-name', header: 'Location Name', width: 32 },
+        { key: 'location-full', header: '', width: 64 } // Full representation to show in the "issues" worksheet (that can be later decoded back into IDs)
     ];
 
-    try {
-        let page = { offset: 0, limit: 128 };
-        let locations = await bim360.listLocationNodes(locationContainerID, page);
-        while (locations.length > 0) {
-            for (const location of locations) {
-                worksheet.addRow({
-                    'location-id': location.id,
-                    'location-parent-id': location.parentId,
-                    'location-name': location.name
-                });
-            }
-            page.offset += locations.length;  
-            locations = bim360.listLocationNodes(locationContainerID, page); 
-        }
-    } catch(err) {
-        console.warn('Could not load BIM360 locations. The "Locations" worksheet will be empty.');
+    for (const location of locations) {
+        worksheet.addRow({
+            'location-id': location.id,
+            'location-parent-id': location.parentId,
+            'location-name': location.name,
+            'location-full': `${location.name} [${location.id}]`
+        });
     }
 
     // Setup data validation and protection where needed
@@ -188,32 +294,19 @@ async function fillIssueLocations(worksheet, bim360, locationContainerID) {
     }
 }
 
-async function fillIssueDocuments(worksheet, bim360, hubId, projectId) {
+function fillIssueDocuments(worksheet, documents) {
     worksheet.columns = [
         { key: 'document-urn', header: 'Document URN', width: 16 },
-        { key: 'document-name', header: 'Document Name', width: 32 }
+        { key: 'document-name', header: 'Document Name', width: 32 },
+        { key: 'document-full', header: '', width: 64 } // Full representation to show in the "issues" worksheet (that can be later decoded back into IDs)
     ];
 
-    async function fillIssues(folderId) {
-        const items = await bim360.listContents(projectId, folderId);
-        for (const item of items) {
-            switch (item.type) {
-                case 'items':
-                    worksheet.addRow({
-                        'document-urn': item.id,
-                        'document-name': item.displayName
-                    });
-                    break;
-                case 'folders':
-                    await fillIssues(item.id);
-                    break;
-            }
-        }
-    }
-
-    const folders = await bim360.listTopFolders(hubId, projectId);
-    for (const folder of folders) {
-        await fillIssues(folder.id);
+    for (const item of documents) {
+        worksheet.addRow({
+            'document-urn': item.id,
+            'document-name': item.displayName,
+            'document-full': `${item.displayName} [${item.id}]`
+        });
     }
 
     // Setup data validation and protection where needed
