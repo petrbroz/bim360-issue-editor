@@ -222,8 +222,12 @@ class IssueView {
             this.hideSpinner();
         }
 
+        function disabled(attribute, issue) {
+            return issue.permitted_attributes.indexOf(attribute) === -1;
+        }
+
         const generateIssueTypeSelect = (issue) => `
-            <select class="custom-select custom-select-sm issue-type" data-original-value="${issue.ng_issue_type_id}">
+            <select class="custom-select custom-select-sm issue-type" data-original-value="${issue.ng_issue_type_id}" ${disabled('ng_issue_type_id', issue) ? 'disabled' : ''}>
                 ${this.issueTypes.map(issueType => `<option value="${issueType.id}" ${(issueType.id === issue.ng_issue_type_id) ? 'selected' : ''}>${issueType.title}</option>`).join('\n')}
             </select>
         `;
@@ -232,20 +236,20 @@ class IssueView {
             const issueType = this.issueTypes.find(it => it.id === issue.ng_issue_type_id);
             const issueSubtypes = issueType ? issueType.subtypes : [];
             return `
-                <select class="custom-select custom-select-sm issue-subtype" data-original-value="${issue.ng_issue_subtype_id}">
+                <select class="custom-select custom-select-sm issue-subtype" data-original-value="${issue.ng_issue_subtype_id}" ${disabled('ng_issue_subtype_id', issue) ? 'disabled' : ''}>
                     ${issueSubtypes.map(issueSubtype => `<option value="${issueSubtype.id}" ${(issueSubtype.id === issue.ng_issue_subtype_id) ? 'selected' : ''}>${issueSubtype.title}</option>`).join('\n')}
                 </select>
             `;
         };
 
         const generateOwnerSelect = (issue) => `
-            <select class="custom-select custom-select-sm issue-owner" data-original-value="${issue.owner}">
+            <select class="custom-select custom-select-sm issue-owner" data-original-value="${issue.owner}" ${disabled('owner', issue) ? 'disabled' : ''}>
                 ${this.users.map(user => `<option value="${user.uid}" ${(user.uid === issue.owner) ? 'selected' : ''}>${user.name}</option>`).join('\n')}
             </select>
         `;
 
         const generateLocationSelect = (issue) => `
-            <select class="custom-select custom-select-sm issue-location" data-original-value="${issue.lbs_location}" ${this.locations.length === 0 ? 'style="display:none"' : ''}>
+            <select class="custom-select custom-select-sm issue-location" data-original-value="${issue.lbs_location}" ${this.locations.length === 0 ? 'style="display:none"' : ''} ${disabled('lbs_location', issue) ? 'disabled' : ''}>
                 <option value=""></option>
                 ${this.locations.map(location => {
                     let name = location.name;
@@ -261,7 +265,7 @@ class IssueView {
         `;
 
         const generateStatusSelect = (issue) => `
-            <select class="custom-select custom-select-sm issue-status" data-original-value="${issue.status}">
+            <select class="custom-select custom-select-sm issue-status" data-original-value="${issue.status}" ${disabled('status', issue) ? 'disabled' : ''}>
                 ${['draft', 'open', 'closed'].map(_status => `<option value="${_status}" ${(_status === issue.status) ? 'selected' : ''}>${_status}</option>`).join('\n')}
             </select>
         `;
@@ -282,10 +286,10 @@ class IssueView {
                         ${generateIssueSubtypeSelect(issue)}
                     </td>
                     <td>
-                        <input type="text" class="form-control form-control-sm issue-title" data-original-value="${issue.title || ''}" value="${issue.title || ''}">
+                        <input type="text" class="form-control form-control-sm issue-title" data-original-value="${issue.title || ''}" value="${issue.title || ''}" ${disabled('title', issue) ? 'disabled' : ''}>
                     </td>
                     <td>
-                        <input type="text" class="form-control form-control-sm issue-description" data-original-value="${issue.description || ''}" value="${issue.description || ''}">
+                        <input type="text" class="form-control form-control-sm issue-description" data-original-value="${issue.description || ''}" value="${issue.description || ''}" ${disabled('description', issue) ? 'disabled' : ''}>
                     </td>
                     <td>
                         ${generateOwnerSelect(issue)}
@@ -300,7 +304,7 @@ class IssueView {
                         ${generateStatusSelect(issue)}
                     </td>
                     <td>
-                        <input type="text" class="form-control form-control-sm issue-answer" data-original-value="${issue.answer || ''}" value="${issue.answer || ''}">
+                        <input type="text" class="form-control form-control-sm issue-answer" data-original-value="${issue.answer || ''}" value="${issue.answer || ''}" ${disabled('answer', issue) ? 'disabled' : ''}>
                     </td>
                     <td class="center">
                         ${
