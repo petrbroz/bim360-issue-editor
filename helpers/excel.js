@@ -90,23 +90,23 @@ async function loadDocuments(bim360, hubId, projectId) {
 
     async function fillIssues(folderId) {
         const items = await bim360.listContents(projectId, folderId);
+        const subtasks = [];
         for (const item of items) {
             switch (item.type) {
                 case 'items':
                     results.push(item);
                     break;
                 case 'folders':
-                    await fillIssues(item.id);
+                    subtasks.push(fillIssues(item.id));
                     break;
             }
         }
+        await Promise.all(subtasks);
     }
 
     const folders = await bim360.listTopFolders(hubId, projectId);
-    for (const folder of folders) {
-        await fillIssues(folder.id);
-    }
-
+    const tasks = folders.map(folder => fillIssues(folder.id));
+    await Promise.all(tasks);
     return results;
 }
 
