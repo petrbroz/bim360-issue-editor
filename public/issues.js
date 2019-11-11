@@ -41,6 +41,13 @@ class IssueView {
 
         const $table = $('#issues-table');
         const $tbody = $table.find('tbody');
+        let updating = false;
+        const update = () => {
+            if (!updating) {
+                updating = true;
+                this.update().finally(() => { updating = false; });
+            }
+        };
 
         // Enable buttons on rows that have been modified
         $tbody.on('change', (ev) => {
@@ -92,6 +99,7 @@ class IssueView {
                         }
                         $.notify('Issue(s) successfully updated.', 'success');
                         console.log('Issue(s) successfully updated.', issue);
+                        update();
                     })
                     .catch(function (err) {
                         $.notify('Could not update issue(s).\nSee console for more details.', 'error');
@@ -108,7 +116,6 @@ class IssueView {
         // Setup button for importing issues
         const issueContainerId = this.issueClient.issueContainerId;
         const $import = $('#import-issues');
-        const update = this.update.bind(this);
         $import.on('click', function () {
             $('#hidden-upload-file').click();
         });
