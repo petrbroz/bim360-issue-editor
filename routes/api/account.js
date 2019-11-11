@@ -6,6 +6,7 @@ let authClient = new AuthenticationClient(config.client_id, config.client_secret
 let router = express.Router();
 
 function handleError(err, res) {
+    console.error(err);
     if (err.isAxiosError) {
         const json = { message: err.message };
         if (err.response.data) {
