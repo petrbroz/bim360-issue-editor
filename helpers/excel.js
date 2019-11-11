@@ -362,6 +362,69 @@ function encodeNameID(name, id) {
     };
 }
 
+/**
+ * Imports BIM360 issues from XLSX spreadsheet.
+ * @async
+ * @param {Buffer} buffer XLSX data.
+ * @param {string} issue_container_id BIM360 issues container ID.
+ * @param {string} token 3-legged access token for Forge requests requiring user context.
+ * @returns {object} Results object listing successfully created issues (in 'succeeded' property)
+ * and errors (in 'failed' property).
+ */
+async function importIssues(buffer, issue_container_id, token) {
+    let results = {
+        succeeded: [],
+        failed: []
+    };
+
+    // If cell value contains rich text, convert it to regular text
+    function unrich(val) {
+        if (typeof val === 'object' && val.hasOwnProperty('richText')) {
+            return val.richText.map(richText => richText.text).join('');
+        } else {
+            return val;
+        }
+    }
+
+    console.log('Parsing XLSX spreadsheet.');
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer);
+    const worksheet = workbook.getWorksheet('Issues');
+
+    console.log('Updating BIM360 issues.');
+    const bim360 = new BIM360Client({ token });
+    const tasks = [];
+    worksheet.eachRow(function (row, rowNumber) {
+        if (rowNumber === 1) {
+            return; // Skip the header row
+        }
+        const issueID = row.values[1];
+        const issueAttributes = {
+            title: unrich(row.values[3])
+        };
+        tasks.push(updateIssue(bim360, issue_container_id, issueID, issueAttributes, results));
+    });
+    await Promise.all(tasks);
+
+    return results;
+}
+
+async function updateIssue(bim360, issueContainerID, issueID, issueAttributes, results) {
+    try {
+        const updatedIssue = await bim360.updateIssue(issueContainerID, issueID, issueAttributes);
+        results.succeeded.push({
+            id: issueID,
+            issue: updatedIssue
+        });
+    } catch (err) {
+        results.failed.push({
+            id: issueID,
+            error: JSON.stringify(err)
+        });
+    }
+}
+
 module.exports = {
-    exportIssues
+    exportIssues,
+    importIssues
 };

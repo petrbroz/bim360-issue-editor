@@ -1,8 +1,12 @@
+const fs = require('fs');
 const express = require('express');
 const { AuthenticationClient, BIM360Client } = require('forge-server-utils');
 const axios = require('axios').default;
+const multer  = require('multer');
+const upload = multer({ dest: 'uploads/' });
+
 const config = require('../../config');
-const { exportIssues } = require('../../helpers/excel');
+const { exportIssues, importIssues } = require('../../helpers/excel');
 
 let authClient = new AuthenticationClient(config.client_id, config.client_secret);
 let router = express.Router();
@@ -98,6 +102,18 @@ router.get('/:issue_container/export', async function (req, res) {
             page_limit: limit
         });
         res.type('.xlsx').send(excel);
+    } catch(err) {
+        handleError(err, res);
+    }
+});
+
+// POST /api/issues/:issue_container/import
+router.post('/:issue_container/import', upload.single('xlsx'), async function (req, res) {
+    const { issue_container } = req.params;
+    const xlsx = fs.readFileSync(req.file.path);
+    try {
+        const results = await importIssues(xlsx, issue_container, req.session.access_token);
+        res.json(results);
     } catch(err) {
         handleError(err, res);
     }

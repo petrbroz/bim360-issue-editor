@@ -105,6 +105,43 @@ class IssueView {
             $('#issues-table button:enabled').trigger('click');
         });
 
+        // Setup button for importing issues
+        const issueContainerId = this.issueClient.issueContainerId;
+        const $import = $('#import-issues');
+        const update = this.update.bind(this);
+        $import.on('click', function () {
+            $('#hidden-upload-file').click();
+        });
+        $('#hidden-upload-file').on('change', async function () {
+            if (this.files.length === 1) {
+                const oldButtonText = $import.html();
+                $import.attr('disabled', true).text('Importing ...');
+                const formData = new FormData();
+                formData.append('xlsx', this.files[0]);
+                const response = await fetch(`/api/issues/${issueContainerId}/import`, {
+                    method: 'POST',
+                    body: formData
+                });
+                if (response.ok) {
+                    const results = await response.json();
+                    if (results.failed && results.failed.length > 0) {
+                        $.notify('Issues partially imported.\nSee console for more details.', 'warn');
+                        console.log('Issues partially imported.', results);
+                        $import.removeAttr('disabled', true).html(oldButtonText);
+                    } else {
+                        $.notify('Issues successfully imported.\nSee console for more details.', 'info');
+                        console.log('Issues successfully imported.', results);
+                        $import.removeAttr('disabled', true).html(oldButtonText);
+                    }
+                    update();
+                } else {
+                    const err = await response.text();
+                    $.notify('Could not import issues.\nSee console for more details.', 'error');
+                    console.error('Could not import issues.', err);
+                    $import.removeAttr('disabled', true).html(oldButtonText);
+                }
+            }
+        });
         this.update();
     }
 
