@@ -119,12 +119,17 @@ router.post('/:issue_container/import', upload.single('xlsx'), async function (r
     }
 });
 
-/*
 // GET /api/issues/:issue_container/config.json
 // Returns JSON that can be used as configuration for the command-line tools available in this project.
 router.get('/:issue_container/config.json', async function (req, res) {
+    if (!process.env.ENABLE_CLI_CONFIG) {
+        res.status(401).end();
+        return;
+    }
+
     const { issue_container } = req.params;
     const { hub_id, region, location_container_id, project_id } = req.query;
+
     try {
         const twoLeggedToken = await authClient.authenticate(['data:read', 'data:write', 'data:create']);
         res.json({
@@ -140,7 +145,6 @@ router.get('/:issue_container/config.json', async function (req, res) {
         handleError(err, res);
     }
 });
-*/
 
 // GET /api/issues/:issue_container/root-causes
 router.get('/:issue_container/root-causes', async function (req, res) {

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Usage:
-//    1. Visit this application's web interface (for example, https://bim360-issue-editor.herokuapp.com)
+//    1. Visit the web interface of this prototype application
 //    2. Navigate to the issue page for one of your BIM360 projects
 //    3. Use the "Command-Line Config" button at the bottom of the page to generate a configuration JSON, and store it locally
 //    4. Run the following command from the command line:
