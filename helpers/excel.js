@@ -366,12 +366,12 @@ function encodeNameID(name, id) {
  * Imports BIM360 issues from XLSX spreadsheet.
  * @async
  * @param {Buffer} buffer XLSX data.
- * @param {string} issue_container_id BIM360 issues container ID.
+ * @param {string} issueContainerID BIM360 issues container ID.
  * @param {string} token 3-legged access token for Forge requests requiring user context.
  * @returns {object} Results object listing successfully created issues (in 'succeeded' property)
  * and errors (in 'failed' property).
  */
-async function importIssues(buffer, issue_container_id, token) {
+async function importIssues(buffer, issueContainerID, token) {
     let results = {
         succeeded: [],
         failed: []
@@ -391,18 +391,47 @@ async function importIssues(buffer, issue_container_id, token) {
     await workbook.xlsx.load(buffer);
     const worksheet = workbook.getWorksheet('Issues');
 
-    console.log('Updating BIM360 issues.');
     const bim360 = new BIM360Client({ token });
+    // Instead of blindly overwriting all fields from the spreadsheet,
+    // fetch the latest state of the issues from BIM360 and only
+    // update those that have (and _can_ be) changed.
+    console.log('Fetching latest BIM360 issues.');
+    const issues = await loadIssues(bim360, issueContainerID);
+
+    console.log('Updating BIM360 issues.');
     const tasks = [];
     worksheet.eachRow(function (row, rowNumber) {
         if (rowNumber === 1) {
             return; // Skip the header row
         }
         const issueID = row.values[1];
-        const issueAttributes = {
-            title: unrich(row.values[3])
+        const currentIssueAttributes = issues.find(issue => issue.id === issueID);
+        const newIssueAttributes = {
+            title: unrich(row.values[3]),
+            description: unrich(row.values[4]),
+            answer: unrich(row.values[9])
         };
-        tasks.push(updateIssue(bim360, issue_container_id, issueID, issueAttributes, results));
+
+        // Check if the issue exists in BIM360
+        if (!currentIssueAttributes) {
+            results.failed.push({ id: issueID, error: 'Issue not found in BIM360.' });
+            return;
+        }
+
+        // Check if any of the new issue properties differ from the original in BIM360, and if they *can* be changed
+        for (const key of Object.getOwnPropertyNames(newIssueAttributes)) {
+            if (currentIssueAttributes[key] == newIssueAttributes[key]) {
+                delete newIssueAttributes[key];
+            } else if (currentIssueAttributes.permitted_attributes.indexOf(key) === -1) {
+                results.failed.push({ id: issueID, error: `Changing one or more of this issue's fields not permitted.` });
+                return;
+            }
+        }
+        if (Object.getOwnPropertyNames(newIssueAttributes).length === 0) {
+            return; // No fields to update
+        }
+
+        tasks.push(updateIssue(bim360, issueContainerID, issueID, newIssueAttributes, results));
     });
     await Promise.all(tasks);
 
