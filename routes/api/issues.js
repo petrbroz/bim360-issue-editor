@@ -119,6 +119,27 @@ router.post('/:issue_container/import', upload.single('xlsx'), async function (r
     }
 });
 
+// GET /api/issues/:issue_container/config.json
+// Returns JSON that can be used as configuration for the command-line tools available in this project.
+router.get('/:issue_container/config.json', async function (req, res) {
+    const { issue_container } = req.params;
+    const { hub_id, region, location_container_id, project_id } = req.query;
+    try {
+        res.json({
+            client_id: config.client_id,
+            client_secret: config.client_secret,
+            three_legged_token: req.session.access_token,
+            region: region,
+            hub_id: hub_id,
+            issue_container_id: issue_container,
+            location_container_id: location_container_id,
+            project_id: project_id
+        });
+    } catch(err) {
+        handleError(err, res);
+    }
+});
+
 // GET /api/issues/:issue_container/root-causes
 router.get('/:issue_container/root-causes', async function (req, res) {
     const { issue_container } = req.params;

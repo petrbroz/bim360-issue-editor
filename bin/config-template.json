@@ -1,0 +1,10 @@
+{
+    "client_id": "<Forge Application ID>",
+    "client_secret": "<Forge Application Secret>",
+    "three_legged_token": "<3-legged Token>",
+    "region": "<Region for specific Forge APIs, 'US' or 'EMEA'>",
+    "hub_id": "<Hub ID>",
+    "issue_container_id": "<Issue Container ID>",
+    "location_container_id": "<Location Container ID>",
+    "project_id": "<Project ID>"
+}
