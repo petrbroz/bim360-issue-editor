@@ -43,6 +43,8 @@ you will need to add the following Forge credentials as a [custom integration](h
   - `FORGE_APP_NAME` - name of your Forge application (used when asking user to setup the BIM 360 integration)
   - `HOST_URL` - URL where the demo application is running (for example, _http://localhost:3000_)
   - `SERVER_SESSION_SECRET` - secret phrase used to encrypt session cookies
+  - `ENABLE_CLI_CONFIG` - (optional) set to `true` to enable the generation of configuration JSON
+  for the CLI tools located under _bin/_
 
 ### Running
 
