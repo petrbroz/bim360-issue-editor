@@ -406,9 +406,30 @@ async function importIssues(buffer, issueContainerID, token) {
         }
         const issueID = row.values[1];
         const currentIssueAttributes = issues.find(issue => issue.id === issueID);
+        const newIssueTypeMatch = unrich(row.values[2]).match(/.+\[(.+),(.+)\]$/);
+        if (!newIssueTypeMatch) {
+            results.failed.push({ id: issueID, error: 'Could not parse issue type and subtype IDs.' });
+            return;
+        }
+        const newIssueOwner = unrich(row.values[5]).match(/.+\[(.+)\]$/);
+        if (!newIssueOwner) {
+            results.failed.push({ id: issueID, error: 'Could not parse issue owner ID.' });
+            return;
+        }
+        const newIssueLocation = unrich(row.values[6]).match(/.+\[(.+)\]$/);
+        // if (!newIssueLocation) {
+        //     results.failed.push({ id: issueID, error: 'Could not parse issue location ID.' });
+        //     return;
+        // }
         const newIssueAttributes = {
+            ng_issue_type_id: newIssueTypeMatch[1],
+            ng_issue_subtype_id: newIssueTypeMatch[2],
             title: unrich(row.values[3]),
             description: unrich(row.values[4]),
+            owner: newIssueOwner[1],
+            lbs_location: newIssueLocation ? newIssueLocation[1] : null,
+            //document: ...
+            status: unrich(row.values[8]),
             answer: unrich(row.values[9])
         };
 
