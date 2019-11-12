@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 // Usage:
-//    1. Visit the web interface of this prototype application
-//    2. Navigate to the issue page for one of your BIM360 projects
+//    1. Run this application's server with `ENABLE_CLI_CONFIG` env. variable is set to true
+//    2. Visit this application's web interface and navigate to the issue page for one of your BIM360 projects
 //    3. Use the "Command-Line Config" button at the bottom of the page to generate a configuration JSON, and store it locally
 //    4. Run the following command from the command line:
 //        node excel-to-bim360.js <path/to/stored/config.json> <path/to/input.xlsx>
