@@ -42,8 +42,10 @@ router.use('/', async function (req, res, next) {
             }
         }
         req.bim360 = new BIM360Client({ token: req.session.access_token }, undefined, req.query.region);
+        next();
+    } else {
+        res.status(401).end();
     }
-    next();
 });
 
 // GET /api/issues/:issue_container

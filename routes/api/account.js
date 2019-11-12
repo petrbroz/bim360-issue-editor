@@ -36,8 +36,10 @@ router.use('/', async function (req, res, next) {
             }
         }
         req.bim360 = new BIM360Client({ client_id: config.client_id, client_secret: config.client_secret }, undefined, req.query.region);
+        next();
+    } else {
+        res.status(401).end();
     }
-    next();
 });
 
 // GET /api/account/:hub/users
