@@ -1,6 +1,5 @@
 {
-    "client_id": "<Forge Application ID>",
-    "client_secret": "<Forge Application Secret>",
+    "two_legged_token": "<2-legged Token>",
     "three_legged_token": "<3-legged Token>",
     "region": "<Region for specific Forge APIs, 'US' or 'EMEA'>",
     "hub_id": "<Hub ID>",

@@ -89,9 +89,9 @@ router.get('/:issue_container/export', async function (req, res) {
     const { issue_container } = req.params;
     const { hub_id, region, location_container_id, project_id, offset, limit } = req.query;
     try {
+        const twoLeggedToken = await authClient.authenticate(['data:read', 'data:write', 'data:create']);
         const excel = await exportIssues({
-            client_id: config.client_id,
-            client_secret: config.client_secret,
+            two_legged_token: twoLeggedToken,
             three_legged_token: req.session.access_token,
             region: region,
             hub_id: hub_id,
@@ -125,9 +125,9 @@ router.get('/:issue_container/config.json', async function (req, res) {
     const { issue_container } = req.params;
     const { hub_id, region, location_container_id, project_id } = req.query;
     try {
+        const twoLeggedToken = await authClient.authenticate(['data:read', 'data:write', 'data:create']);
         res.json({
-            client_id: config.client_id,
-            client_secret: config.client_secret,
+            two_legged_token: twoLeggedToken,
             three_legged_token: req.session.access_token,
             region: region,
             hub_id: hub_id,

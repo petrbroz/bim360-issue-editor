@@ -5,8 +5,7 @@ const ExcelJS = require('exceljs');
  * Exports BIM360 issues and related data into XLSX spreadsheet.
  * @async
  * @param {object} opts Export options.
- * @param {string} opts.client_id Forge client ID.
- * @param {string} opts.client_secret Forge client secret.
+ * @param {string} opts.two_legged_token 2-legged access token for Forge requests requiring app context.
  * @param {string} opts.three_legged_token 3-legged access token for Forge requests requiring user context.
  * @param {string} opts.region Forge region ("US" or "EMEA").
  * @param {string} opts.hub_id BIM360 hub ID.
@@ -19,8 +18,7 @@ const ExcelJS = require('exceljs');
  */
 async function exportIssues(opts) {
     const {
-        client_id,
-        client_secret,
+        two_legged_token,
         three_legged_token,
         region,
         hub_id,
@@ -30,7 +28,7 @@ async function exportIssues(opts) {
         page_offset,
         page_limit
     } = opts;
-    const appContextBIM360 = new BIM360Client({ client_id, client_secret }, undefined, region);
+    const appContextBIM360 = new BIM360Client({ token: two_legged_token }, undefined, region);
     const userContextBIM360 = new BIM360Client({ token: three_legged_token }, undefined, region);
 
     console.log('Fetching BIM360 data for export.');
@@ -367,11 +365,11 @@ function encodeNameID(name, id) {
  * @async
  * @param {Buffer} buffer XLSX data.
  * @param {string} issueContainerID BIM360 issues container ID.
- * @param {string} token 3-legged access token for Forge requests requiring user context.
+ * @param {string} threeLeggedToken 3-legged access token for Forge requests requiring user context.
  * @returns {object} Results object listing successfully created issues (in 'succeeded' property)
  * and errors (in 'failed' property).
  */
-async function importIssues(buffer, issueContainerID, token) {
+async function importIssues(buffer, issueContainerID, threeLeggedToken) {
     let results = {
         succeeded: [],
         failed: []
@@ -391,7 +389,7 @@ async function importIssues(buffer, issueContainerID, token) {
     await workbook.xlsx.load(buffer);
     const worksheet = workbook.getWorksheet('Issues');
 
-    const bim360 = new BIM360Client({ token });
+    const bim360 = new BIM360Client({ token: threeLeggedToken });
     // Instead of blindly overwriting all fields from the spreadsheet,
     // fetch the latest state of the issues from BIM360 and only
     // update those that have (and _can_ be) changed.
