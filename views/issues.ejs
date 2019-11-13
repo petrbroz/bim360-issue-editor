@@ -101,19 +101,17 @@
                 </li>
             </ul>
         </nav>
-        <% if (enableCliConfig) { %>
-            <a href="/api/issues/<%= issueContainer %>/config.json?hub_id=<%= hub.id %>&region=<%= hub.region %>&location_container_id=<%= locationContainer %>&project_id=<%= project.id %>" target="_blank" class="btn btn-sm btn-light ml-2">
-                <i class="fas fa-terminal"></i> Command-Line Config
-            </a>
-        <% } %>
         <a href="/api/issues/<%= issueContainer %>/export?hub_id=<%= hub.id %>&region=<%= hub.region %>&location_container_id=<%= locationContainer %>&project_id=<%= project.id %>&offset=0&limit=100" target="_blank" class="btn btn-sm btn-light ml-2">
             <i class="fas fa-file-import"></i> Export First 100 Issues
         </a>
         <a href="/api/issues/<%= issueContainer %>/export?hub_id=<%= hub.id %>&region=<%= hub.region %>&location_container_id=<%= locationContainer %>&project_id=<%= project.id %>" target="_blank" class="btn btn-sm btn-light ml-2">
             <i class="fas fa-file-import"></i> Export All Issues
         </a>
-        <a id="import-issues" href="#" class="btn btn-sm btn-light ml-2 mr-auto">
+        <a id="import-issues" href="#" class="btn btn-sm btn-light ml-2">
             <i class="fas fa-file-export"></i> Import Issues
+        </a>
+        <a href="/api/issues/<%= issueContainer %>/config.json.zip?hub_id=<%= hub.id %>&region=<%= hub.region %>&location_container_id=<%= locationContainer %>&project_id=<%= project.id %>" target="_blank" class="btn btn-sm btn-light ml-2 mr-auto">
+            <i class="fas fa-terminal"></i> Command-Line Config
         </a>
         <form id="xlsx-upload" method='post' enctype="multipart/form-data">
             <input id="hidden-upload-file" type="file" name="xlsx" style="visibility:hidden" />

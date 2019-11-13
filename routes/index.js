@@ -68,8 +68,7 @@ router.get('/:hub/:project', async function (req, res) {
             project,
             issueContainer,
             locationContainer,
-            account: req.params.hub.replace('b.', ''),
-            enableCliConfig: !!process.env.ENABLE_CLI_CONFIG
+            account: req.params.hub.replace('b.', '')
         });
     } catch(err) {
         res.render('error', { session: req.session, error: err });

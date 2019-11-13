@@ -1,4 +1,7 @@
 const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const spawn = require('child_process').spawn;
 const express = require('express');
 const { AuthenticationClient, BIM360Client } = require('forge-server-utils');
 const axios = require('axios').default;
@@ -121,20 +124,15 @@ router.post('/:issue_container/import', upload.single('xlsx'), async function (r
     }
 });
 
-// GET /api/issues/:issue_container/config.json
-// Returns JSON that can be used as configuration for the command-line tools available in this project.
-router.get('/:issue_container/config.json', async function (req, res) {
-    if (!process.env.ENABLE_CLI_CONFIG) {
-        res.status(401).end();
-        return;
-    }
-
+// GET /api/issues/:issue_container/config.json.zip
+// Returns password-protected archive with configuration for the command-line tools available in this project.
+router.get('/:issue_container/config.json.zip', async function (req, res) {
     const { issue_container } = req.params;
     const { hub_id, region, location_container_id, project_id } = req.query;
 
     try {
         const twoLeggedToken = await authClient.authenticate(['data:read', 'data:write', 'data:create']);
-        res.json({
+        const config = JSON.stringify({
             two_legged_token: twoLeggedToken,
             three_legged_token: req.session.access_token,
             region: region,
@@ -142,6 +140,27 @@ router.get('/:issue_container/config.json', async function (req, res) {
             issue_container_id: issue_container,
             location_container_id: location_container_id,
             project_id: project_id
+        }, null, 4);
+        const tmpDir = path.resolve(os.tmpdir(), issue_container);
+        const jsonPath = path.join(tmpDir, 'config.json');
+        const zipPath = path.join(tmpDir, 'config.zip');
+        if (!fs.existsSync(tmpDir)) {
+            fs.mkdirSync(tmpDir);
+        }
+        fs.writeFileSync(jsonPath, config);
+        const zip = spawn('zip', ['-P', process.env.CLI_CONFIG_PASSWORD, 'config.zip', 'config.json'], { cwd: tmpDir });
+        zip.on('exit', function(code) {
+            if (code !== 0) {
+                handleError('Could not compress the config file.', res);
+                return;
+            }
+            res.sendFile(zipPath, function (err) {
+                if (err) {
+                    handleError(err, res);
+                }
+                fs.unlinkSync(jsonPath);
+                fs.unlinkSync(zipPath);
+            });
         });
     } catch(err) {
         handleError(err, res);

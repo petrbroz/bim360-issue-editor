@@ -1,9 +1,0 @@
-{
-    "two_legged_token": "<2-legged Token>",
-    "three_legged_token": "<3-legged Token>",
-    "region": "<Region for specific Forge APIs, 'US' or 'EMEA'>",
-    "hub_id": "<Hub ID>",
-    "issue_container_id": "<Issue Container ID>",
-    "location_container_id": "<Location Container ID>",
-    "project_id": "<Project ID>"
-}
