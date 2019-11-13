@@ -101,7 +101,7 @@ async function loadLocations(bim360, locationContainerID) {
 async function loadDocuments(bim360, hubId, projectId) {
     let results = [];
 
-    async function fillIssues(folderId) {
+    async function collect(folderId) {
         const items = await bim360.listContents(projectId, folderId);
         const subtasks = [];
         for (const item of items) {
@@ -110,7 +110,7 @@ async function loadDocuments(bim360, hubId, projectId) {
                     results.push(item);
                     break;
                 case 'folders':
-                    subtasks.push(fillIssues(item.id));
+                    subtasks.push(collect(item.id));
                     break;
             }
         }
@@ -119,7 +119,7 @@ async function loadDocuments(bim360, hubId, projectId) {
 
     console.log('Fetching BIM360 documents');
     const folders = await bim360.listTopFolders(hubId, projectId);
-    const tasks = folders.map(folder => fillIssues(folder.id));
+    const tasks = folders.map(folder => collect(folder.id));
     await Promise.all(tasks);
     return results;
 }
