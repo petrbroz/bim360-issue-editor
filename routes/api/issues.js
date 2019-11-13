@@ -129,11 +129,10 @@ router.post('/:issue_container/import', upload.single('xlsx'), async function (r
 router.get('/:issue_container/config.json.zip', async function (req, res) {
     const { issue_container } = req.params;
     const { hub_id, region, location_container_id, project_id } = req.query;
-
     try {
-        const twoLeggedToken = await authClient.authenticate(['data:read', 'data:write', 'data:create']);
+        const twoLeggedToken = await authClient.authenticate(['data:read', 'data:write', 'data:create', 'account:read']);
         const config = JSON.stringify({
-            two_legged_token: twoLeggedToken,
+            two_legged_token: twoLeggedToken.access_token,
             three_legged_token: req.session.access_token,
             region: region,
             hub_id: hub_id,
