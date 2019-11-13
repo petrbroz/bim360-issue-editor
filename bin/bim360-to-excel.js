@@ -13,20 +13,21 @@
 //    5. Run the following command from the command line:
 //        node bim360-to-excel.js <path/to/unzipped/config.json> <path/to/output.xlsx>
 
-const fs = require('fs');
+const fse = require('fs-extra');
 const { exportIssues } = require('../helpers/excel');
 
 async function run(configPath, outputPath) {
-    let config = null;
     try {
-        config = JSON.parse(fs.readFileSync(configPath));    
-    } catch(err) {
+        const config = fse.readJsonSync(configPath);
+        console.log(`Exporting issues from BIM360 project ${config.project_id} into ${outputPath}.`);
+        const xlsx = await exportIssues(config);
+        fse.ensureFileSync(outputPath);
+        fse.writeFileSync(outputPath, xlsx);
+        console.log('Done.');
+    } catch (err) {
         console.error(err);
         process.exit(1);
     }
-
-    const xlsx = await exportIssues(config);
-    fs.writeFileSync(outputPath, xlsx);
 }
 
 run(process.argv[2], process.argv[3]);

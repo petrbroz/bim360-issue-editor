@@ -13,20 +13,29 @@
 //    5. Run the following command from the command line:
 //        node excel-to-bim360.js <path/to/unzipped/config.json> <path/to/input.xlsx>
 
-const fs = require('fs');
+const fse = require('fs-extra');
+
 const { importIssues } = require('../helpers/excel');
 
 async function run(configPath, inputPath) {
-    let config = null;
     try {
-        config = JSON.parse(fs.readFileSync(configPath));    
-    } catch(err) {
+        const config = fse.readJsonSync(configPath);
+        console.log(`Importing issues from ${inputPath} into BIM360 project ${config.project_id}.`);
+        const xlsx = fse.readFileSync(inputPath);
+        const results = await importIssues(xlsx, config.issue_container_id, config.three_legged_token);
+        console.log(`Done (succeeded: ${results.succeeded.length}, failed: ${results.failed.length}).`)
+        if (results.succeeded.length > 0) {
+            console.log('Succeeded:');
+            console.table(results.succeeded.map(record => record.issue));
+        }
+        if (results.failed.length > 0) {
+            console.log('Failed:');
+            console.table(results.failed);
+        }
+    } catch (err) {
         console.error(err);
         process.exit(1);
     }
-    const xlsx = fs.readFileSync(inputPath);
-    const results = await importIssues(xlsx, config.issue_container_id, config.three_legged_token);
-    console.log(JSON.stringify(results));
 }
 
 run(process.argv[2], process.argv[3]);
