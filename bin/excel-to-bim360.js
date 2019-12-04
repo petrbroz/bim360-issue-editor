@@ -17,12 +17,12 @@ const fse = require('fs-extra');
 
 const { importIssues } = require('../helpers/excel');
 
-async function run(configPath, inputPath, sequential) {
+async function run(configPath, inputPath, sequential, range) {
     try {
         const config = fse.readJsonSync(configPath);
         console.log(`Importing issues from ${inputPath} into BIM360 project ${config.project_id}.`);
         const xlsx = fse.readFileSync(inputPath);
-        const results = await importIssues(xlsx, config.issue_container_id, config.three_legged_token, sequential);
+        const results = await importIssues(xlsx, config.issue_container_id, config.three_legged_token, sequential, range);
         console.log(`Done (succeeded: ${results.succeeded.length}, failed: ${results.failed.length}).`)
         if (results.succeeded.length > 0) {
             console.log('Succeeded:');
@@ -39,4 +39,5 @@ async function run(configPath, inputPath, sequential) {
 }
 
 const sequential = process.argv.indexOf('--sequential') !== -1;
-run(process.argv[2], process.argv[3], sequential);
+const range = process.argv.find(arg => arg.startsWith('--range='));
+run(process.argv[2], process.argv[3], sequential, range ? range.replace('--range=', '').split('-').map(token => parseInt(token)) : null);

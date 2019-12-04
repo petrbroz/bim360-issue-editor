@@ -367,10 +367,11 @@ function encodeNameID(name, id) {
  * @param {string} issueContainerID BIM360 issues container ID.
  * @param {string} threeLeggedToken 3-legged access token for Forge requests requiring user context.
  * @param {boolean} [sequential=false] Flag for updating issues sequentially instead of in bulk.
+ * @param {array} [range=null] Array of two integers specifying the number range of rows to import.
  * @returns {object} Results object listing successfully created issues (in 'succeeded' property)
  * and errors (in 'failed' property).
  */
-async function importIssues(buffer, issueContainerID, threeLeggedToken, sequential = false) {
+async function importIssues(buffer, issueContainerID, threeLeggedToken, sequential = false, range = null) {
     let results = {
         succeeded: [],
         failed: []
@@ -408,6 +409,10 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken, sequenti
     worksheet.eachRow(function (row, rowNumber) {
         if (rowNumber === 1) {
             return; // Skip the header row
+        }
+
+        if (range && (rowNumber < range[0] || rowNumber > range[1])) {
+            return; // Skip row numbers not included in the `range` parameter
         }
 
         try {
