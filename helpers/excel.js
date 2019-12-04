@@ -377,6 +377,7 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken) {
 
     // If cell value contains rich text, convert it to regular text
     function unrich(val) {
+        val = val || '';
         if (typeof val === 'object' && val.hasOwnProperty('richText')) {
             return val.richText.map(richText => richText.text).join('');
         } else {
@@ -402,55 +403,61 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken) {
         if (rowNumber === 1) {
             return; // Skip the header row
         }
-        const issueID = row.values[1];
-        const currentIssueAttributes = issues.find(issue => issue.id === issueID);
-        const newIssueTypeMatch = unrich(row.values[2]).match(/.+\[(.+),(.+)\]$/);
-        if (!newIssueTypeMatch) {
-            results.failed.push({ id: issueID, error: 'Could not parse issue type and subtype IDs.' });
-            return;
-        }
-        const newIssueOwner = unrich(row.values[5]).match(/.+\[(.+)\]$/);
-        if (!newIssueOwner) {
-            results.failed.push({ id: issueID, error: 'Could not parse issue owner ID.' });
-            return;
-        }
-        const newIssueLocation = unrich(row.values[6]).match(/.+\[(.+)\]$/);
-        // if (!newIssueLocation) {
-        //     results.failed.push({ id: issueID, error: 'Could not parse issue location ID.' });
-        //     return;
-        // }
-        const newIssueAttributes = {
-            ng_issue_type_id: newIssueTypeMatch[1],
-            ng_issue_subtype_id: newIssueTypeMatch[2],
-            title: unrich(row.values[3]),
-            description: unrich(row.values[4]),
-            owner: newIssueOwner[1],
-            lbs_location: newIssueLocation ? newIssueLocation[1] : null,
-            //document: ...
-            status: unrich(row.values[8]),
-            answer: unrich(row.values[9])
-        };
 
-        // Check if the issue exists in BIM360
-        if (!currentIssueAttributes) {
-            results.failed.push({ id: issueID, error: 'Issue not found in BIM360.' });
-            return;
-        }
-
-        // Check if any of the new issue properties differ from the original in BIM360, and if they *can* be changed
-        for (const key of Object.getOwnPropertyNames(newIssueAttributes)) {
-            if (currentIssueAttributes[key] == newIssueAttributes[key]) {
-                delete newIssueAttributes[key];
-            } else if (currentIssueAttributes.permitted_attributes.indexOf(key) === -1) {
-                results.failed.push({ id: issueID, error: `Changing one or more of this issue's fields not permitted.` });
+        try {
+            const issueID = row.values[1];
+            const currentIssueAttributes = issues.find(issue => issue.id === issueID);
+            const newIssueTypeMatch = unrich(row.values[2]).match(/.+\[(.+),(.+)\]$/);
+            if (!newIssueTypeMatch) {
+                results.failed.push({ id: issueID, row: rowNumber, error: 'Could not parse issue type and subtype IDs.' });
                 return;
             }
+            const newIssueOwner = unrich(row.values[5]).match(/.+\[(.+)\]$/);
+            if (!newIssueOwner) {
+                results.failed.push({ id: issueID, row: rowNumber, error: 'Could not parse issue owner ID.' });
+                return;
+            }
+            const newIssueLocation = unrich(row.values[6]).match(/.+\[(.+)\]$/);
+            // if (!newIssueLocation) {
+            //     results.failed.push({ id: issueID, error: 'Could not parse issue location ID.' });
+            //     return;
+            // }
+            const newIssueAttributes = {
+                ng_issue_type_id: newIssueTypeMatch[1],
+                ng_issue_subtype_id: newIssueTypeMatch[2],
+                title: unrich(row.values[3]),
+                description: unrich(row.values[4]),
+                owner: newIssueOwner[1],
+                lbs_location: newIssueLocation ? newIssueLocation[1] : null,
+                //document: ...
+                status: unrich(row.values[8]),
+                answer: unrich(row.values[9])
+            };
+    
+            // Check if the issue exists in BIM360
+            if (!currentIssueAttributes) {
+                results.failed.push({ id: issueID, row: rowNumber, error: 'Issue not found in BIM360.' });
+                return;
+            }
+    
+            // Check if any of the new issue properties differ from the original in BIM360, and if they *can* be changed
+            for (const key of Object.getOwnPropertyNames(newIssueAttributes)) {
+                if (currentIssueAttributes[key] == newIssueAttributes[key]) {
+                    delete newIssueAttributes[key];
+                } else if (currentIssueAttributes.permitted_attributes.indexOf(key) === -1) {
+                    results.failed.push({ id: issueID, error: `Changing one or more of this issue's fields not permitted.` });
+                    return;
+                }
+            }
+            if (Object.getOwnPropertyNames(newIssueAttributes).length === 0) {
+                return; // No fields to update
+            }
+    
+            tasks.push(updateIssue(bim360, issueContainerID, issueID, newIssueAttributes, results));
+        } catch (err) {
+            console.error('Error when parsing spreadsheet row', rowNumber);
+            throw new Error(err);
         }
-        if (Object.getOwnPropertyNames(newIssueAttributes).length === 0) {
-            return; // No fields to update
-        }
-
-        tasks.push(updateIssue(bim360, issueContainerID, issueID, newIssueAttributes, results));
     });
     await Promise.all(tasks);
 
