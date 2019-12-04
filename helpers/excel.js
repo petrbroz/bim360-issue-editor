@@ -477,8 +477,8 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken, sequenti
 
     if (sequential) {
         for (const task of tasks) {
-            console.log('Updating issue', issueID);
             const { bim360, issueContainerID, issueID, newIssueAttributes, results } = task;
+            console.log('Updating issue', issueID);
             await updateIssue(bim360, issueContainerID, issueID, newIssueAttributes, results);
         }
     } else {
