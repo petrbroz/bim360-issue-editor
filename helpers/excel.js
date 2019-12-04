@@ -451,6 +451,8 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken, sequenti
                 return;
             }
 
+            const issueNumber = currentIssueAttributes.identifier;
+
             // Check if any of the new issue properties differ from the original in BIM360, and if they *can* be changed
             let blockedAttributeUpdates = [];
             for (const key of Object.getOwnPropertyNames(newIssueAttributes)) {
@@ -461,7 +463,7 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken, sequenti
                 }
             }
             if (blockedAttributeUpdates.length > 0) {
-                results.failed.push({ id: issueID, error: `Changing these issue fields is not permitted: ${blockedAttributeUpdates.join(', ')}.` });
+                results.failed.push({ number: issueNumber, id: issueID, error: `Changing these issue fields is not permitted: ${blockedAttributeUpdates.join(', ')}.` });
                 return;
             }
             if (Object.getOwnPropertyNames(newIssueAttributes).length === 0) {
@@ -469,9 +471,9 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken, sequenti
             }
 
             if (sequential) {
-                tasks.push({ bim360, issueContainerID, issueID, newIssueAttributes, results });
+                tasks.push({ bim360, issueContainerID, issueID, newIssueAttributes, issueNumber, results });
             } else {
-                tasks.push(updateIssue(bim360, issueContainerID, issueID, newIssueAttributes, results));
+                tasks.push(updateIssue(bim360, issueContainerID, issueID, newIssueAttributes, issueNumber, results));
             }
         } catch (err) {
             console.error('Error when parsing spreadsheet row', rowNumber);
@@ -481,9 +483,9 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken, sequenti
 
     if (sequential) {
         for (const task of tasks) {
-            const { bim360, issueContainerID, issueID, newIssueAttributes, results } = task;
+            const { bim360, issueContainerID, issueID, newIssueAttributes, issueNumber, results } = task;
             console.log('Updating issue', issueID);
-            await updateIssue(bim360, issueContainerID, issueID, newIssueAttributes, results);
+            await updateIssue(bim360, issueContainerID, issueID, newIssueAttributes, issueNumber, results);
         }
     } else {
         console.log('Waiting for all updates to complete.');
@@ -493,15 +495,17 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken, sequenti
     return results;
 }
 
-async function updateIssue(bim360, issueContainerID, issueID, issueAttributes, results) {
+async function updateIssue(bim360, issueContainerID, issueID, issueAttributes, issueNumber, results) {
     try {
         const updatedIssue = await bim360.updateIssue(issueContainerID, issueID, issueAttributes);
         results.succeeded.push({
+            number: issueNumber,
             id: issueID,
             issue: updatedIssue
         });
     } catch (err) {
         results.failed.push({
+            number: issueNumber,
             id: issueID,
             error: JSON.stringify(err)
         });
