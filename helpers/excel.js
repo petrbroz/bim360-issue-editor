@@ -366,10 +366,11 @@ function encodeNameID(name, id) {
  * @param {Buffer} buffer XLSX data.
  * @param {string} issueContainerID BIM360 issues container ID.
  * @param {string} threeLeggedToken 3-legged access token for Forge requests requiring user context.
+ * @param {boolean} [sequential=false] Flag for updating issues sequentially instead of in bulk.
  * @returns {object} Results object listing successfully created issues (in 'succeeded' property)
  * and errors (in 'failed' property).
  */
-async function importIssues(buffer, issueContainerID, threeLeggedToken) {
+async function importIssues(buffer, issueContainerID, threeLeggedToken, sequential = false) {
     let results = {
         succeeded: [],
         failed: []
@@ -397,8 +398,13 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken) {
     console.log('Fetching latest BIM360 issues.');
     const issues = await loadIssues(bim360, issueContainerID);
 
-    console.log('Updating BIM360 issues.');
-    const tasks = [];
+    if (sequential) {
+        console.log('Parsing spreadsheet data.');
+    } else {
+        console.log('Updating BIM360 issues.');
+    }
+
+    const tasks = []; // Can be either promises, or objects with update params (if `sequential` mode is used)
     worksheet.eachRow(function (row, rowNumber) {
         if (rowNumber === 1) {
             return; // Skip the header row
@@ -433,13 +439,13 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken) {
                 status: unrich(row.values[8]),
                 answer: unrich(row.values[9])
             };
-    
+
             // Check if the issue exists in BIM360
             if (!currentIssueAttributes) {
                 results.failed.push({ id: issueID, row: rowNumber, error: 'Issue not found in BIM360.' });
                 return;
             }
-    
+
             // Check if any of the new issue properties differ from the original in BIM360, and if they *can* be changed
             for (const key of Object.getOwnPropertyNames(newIssueAttributes)) {
                 if (currentIssueAttributes[key] == newIssueAttributes[key]) {
@@ -452,14 +458,28 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken) {
             if (Object.getOwnPropertyNames(newIssueAttributes).length === 0) {
                 return; // No fields to update
             }
-    
-            tasks.push(updateIssue(bim360, issueContainerID, issueID, newIssueAttributes, results));
+
+            if (sequential) {
+                tasks.push({ bim360, issueContainerID, issueID, newIssueAttributes, results });
+            } else {
+                tasks.push(updateIssue(bim360, issueContainerID, issueID, newIssueAttributes, results));
+            }
         } catch (err) {
             console.error('Error when parsing spreadsheet row', rowNumber);
             throw new Error(err);
         }
     });
-    await Promise.all(tasks);
+
+    if (sequential) {
+        for (const task of tasks) {
+            console.log('Updating issue', issueID);
+            const { bim360, issueContainerID, issueID, newIssueAttributes, results } = task;
+            await updateIssue(bim360, issueContainerID, issueID, newIssueAttributes, results);
+        }
+    } else {
+        console.log('Waiting for all updates to complete.');
+        await Promise.all(tasks);
+    }
 
     return results;
 }
