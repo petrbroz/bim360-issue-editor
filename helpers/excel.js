@@ -452,13 +452,17 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken, sequenti
             }
 
             // Check if any of the new issue properties differ from the original in BIM360, and if they *can* be changed
+            let blockedAttributeUpdates = [];
             for (const key of Object.getOwnPropertyNames(newIssueAttributes)) {
                 if (currentIssueAttributes[key] == newIssueAttributes[key]) {
                     delete newIssueAttributes[key];
                 } else if (currentIssueAttributes.permitted_attributes.indexOf(key) === -1) {
-                    results.failed.push({ id: issueID, error: `Changing one or more of this issue's fields not permitted.` });
-                    return;
+                    blockedAttributeUpdates.push(key);
                 }
+            }
+            if (blockedAttributeUpdates.length > 0) {
+                results.failed.push({ id: issueID, error: `Changing these issue fields is not permitted: ${blockedAttributeUpdates.join(', ')}.` });
+                return;
             }
             if (Object.getOwnPropertyNames(newIssueAttributes).length === 0) {
                 return; // No fields to update
