@@ -49,20 +49,20 @@
         <h4>Issues</h4>
         <div id="filter">
             <div class="row">
-                <label for="due-date-picker" class="col-lg-1 col-md-2 col-sm-4">Due Date:</label>
-                <input type="date" id="due-date-picker" class="col-lg-2 col-md-4 col-sm-8 form-control form-control-sm">
+                <label for="issue-num-picker" class="col-lg-1 col-md-2 col-sm-4">Number:</label>
+                <input type="number" id="issue-num-picker" class="col-lg-2 col-md-4 col-sm-8 form-control form-control-sm">
+                <label for="owner-picker" class="col-lg-1 col-md-2 col-sm-4">Owner:</label>
+                <select id="owner-picker" class="col-lg-2 col-md-4 col-sm-8 custom-select custom-select-sm"></select>
                 <label for="creator-picker" class="col-lg-1 col-md-2 col-sm-4">Created By:</label>
                 <select id="creator-picker" class="col-lg-2 col-md-4 col-sm-8 custom-select custom-select-sm"></select>
+            </div>
+            <div class="row">
                 <label for="issue-type-picker" class="col-lg-1 col-md-2 col-sm-4">Type:</label>
                 <select id="issue-type-picker" class="col-lg-2 col-md-4 col-sm-8 custom-select custom-select-sm"></select>
                 <label for="issue-subtype-picker" class="col-lg-1 col-md-2 col-sm-4">Subtype:</label>
                 <select id="issue-subtype-picker" class="col-lg-2 col-md-4 col-sm-8 custom-select custom-select-sm"></select>
-            </div>
-            <div class="row">
-                <label for="owner-picker" class="col-lg-1 col-md-2 col-sm-4">Owner:</label>
-                <select id="owner-picker" class="col-lg-2 col-md-4 col-sm-8 custom-select custom-select-sm"></select>
-                <!-- <label for="issue-num-picker" class="col-lg-1 col-md-2 col-sm-4">Number:</label>
-                <input type="number" id="issue-num-picker" class="col-lg-2 col-md-4 col-sm-8 form-control form-control-sm"> -->
+                <label for="due-date-picker" class="col-lg-1 col-md-2 col-sm-4">Due Date:</label>
+                <input type="date" id="due-date-picker" class="col-lg-2 col-md-4 col-sm-8 form-control form-control-sm">
             </div>
         </div>
         <table id="issues-table" class="table table-sm">

@@ -219,12 +219,13 @@ class IssueView {
         // Get issues based on the current filters
         let issues = [];
         try {
+            const issueIdentifier = $('#issue-num-picker').val();
             const issueOwner = $('#owner-picker').val();
             const createdBy = $('#creator-picker').val();
             const issueType = $('#issue-type-picker').val();
             const issueSubtype = $('#issue-subtype-picker').val();
             const dueDate = $('#due-date-picker').val();
-            issues = await this.issueClient.listIssues(issueOwner || null, createdBy || null, dueDate || null, issueType || null, issueSubtype || null, this.page * this.pageSize, this.pageSize);
+            issues = await this.issueClient.listIssues(issueIdentifier || null, issueOwner || null, createdBy || null, dueDate || null, issueType || null, issueSubtype || null, this.page * this.pageSize, this.pageSize);
         } catch (err) {
             $container.append(`<div class="alert alert-dismissible alert-warning">${err}</div>`);
         } finally {
@@ -496,15 +497,26 @@ class IssueClient {
         }
     }
 
-    async listIssues(owner = null, createdBy = null, dueDate = null, issueType = null, issueSubtype = null, offset = null, limit = null) {
-        return this._get(``, {
-            owner,
-            created_by: createdBy,
-            due_date: dueDate,
-            ng_issue_type_id: issueType,
-            ng_issue_subtype_id: issueSubtype,
-            offset, limit
-        });
+    async listIssues(identifier = null, owner = null, createdBy = null, dueDate = null, issueType = null, issueSubtype = null, offset = null, limit = null) {
+        if (identifier) {
+            const issues = await this._get(``, {
+                owner,
+                created_by: createdBy,
+                due_date: dueDate,
+                ng_issue_type_id: issueType,
+                ng_issue_subtype_id: issueSubtype
+            });
+            return issues.filter(issue => issue.identifier.toString() === identifier);
+        } else {
+            return this._get(``, {
+                owner,
+                created_by: createdBy,
+                due_date: dueDate,
+                ng_issue_type_id: issueType,
+                ng_issue_subtype_id: issueSubtype,
+                offset, limit
+            });
+        }
     }
 
     async updateIssue(issueId, attrs) {
