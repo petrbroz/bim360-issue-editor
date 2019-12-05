@@ -456,9 +456,11 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken, sequenti
             // Check if any of the new issue properties differ from the original in BIM360, and if they *can* be changed
             let blockedAttributeUpdates = [];
             for (const key of Object.getOwnPropertyNames(newIssueAttributes)) {
-                if (currentIssueAttributes[key] == newIssueAttributes[key]) {
+                if (currentIssueAttributes[key] == newIssueAttributes[key]) { // both values are equal
                     delete newIssueAttributes[key];
-                } else if (currentIssueAttributes.permitted_attributes.indexOf(key) === -1) {
+                } else if (!currentIssueAttributes[key] && !newIssueAttributes[key]) { // both values are "falsy" (e.g., an empty string and a null)
+                    delete newIssueAttributes[key];
+                } else if (currentIssueAttributes.permitted_attributes.indexOf(key) === -1) { // field change not permitted
                     blockedAttributeUpdates.push(key);
                 }
             }
