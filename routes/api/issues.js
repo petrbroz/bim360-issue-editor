@@ -56,6 +56,9 @@ router.get('/:issue_container', async function (req, res) {
     const { issue_container } = req.params;
     try {
         let filter = {};
+        if (req.query.owner) {
+            filter.owner = req.query.owner;
+        }
         if (req.query.due_date) {
             filter.due_date = new Date(req.query.due_date);
         }
