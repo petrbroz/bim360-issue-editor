@@ -464,18 +464,18 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken, sequenti
                     blockedAttributeUpdates.push(key);
                 }
             }
-            if (blockedAttributeUpdates.length > 0) {
-                results.failed.push({ number: issueNumber, id: issueID, error: `Changing these issue fields is not permitted: ${blockedAttributeUpdates.join(', ')}.` });
-                return;
-            }
+            // if (blockedAttributeUpdates.length > 0) {
+            //     results.failed.push({ number: issueNumber, id: issueID, error: `Changing these issue fields is not permitted: ${blockedAttributeUpdates.join(', ')}.` });
+            //     return;
+            // }
             if (Object.getOwnPropertyNames(newIssueAttributes).length === 0) {
                 return; // No fields to update
             }
 
             if (sequential) {
-                tasks.push({ bim360, issueContainerID, issueID, newIssueAttributes, issueNumber, results });
+                tasks.push({ bim360, issueContainerID, issueID, currentIssueAttributes, newIssueAttributes, blockedAttributeUpdates, issueNumber, results });
             } else {
-                tasks.push(updateIssue(bim360, issueContainerID, issueID, newIssueAttributes, issueNumber, results));
+                tasks.push(updateIssue(bim360, issueContainerID, issueID, currentIssueAttributes, newIssueAttributes, blockedAttributeUpdates, issueNumber, results));
             }
         } catch (err) {
             console.error('Error when parsing spreadsheet row', rowNumber);
@@ -485,9 +485,9 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken, sequenti
 
     if (sequential) {
         for (const task of tasks) {
-            const { bim360, issueContainerID, issueID, newIssueAttributes, issueNumber, results } = task;
+            const { bim360, issueContainerID, issueID, currentIssueAttributes, newIssueAttributes, blockedAttributeUpdates, issueNumber, results } = task;
             console.log('Updating issue', issueID);
-            await updateIssue(bim360, issueContainerID, issueID, newIssueAttributes, issueNumber, results);
+            await updateIssue(bim360, issueContainerID, issueID, currentIssueAttributes, newIssueAttributes, blockedAttributeUpdates, issueNumber, results);
         }
     } else {
         console.log('Waiting for all updates to complete.');
@@ -497,14 +497,29 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken, sequenti
     return results;
 }
 
-async function updateIssue(bim360, issueContainerID, issueID, issueAttributes, issueNumber, results) {
+async function updateIssue(bim360, issueContainerID, issueID, currentIssueAttributes, newIssueAttributes, blockedAttributes, issueNumber, results) {
     try {
-        const updatedIssue = await bim360.updateIssue(issueContainerID, issueID, issueAttributes);
-        results.succeeded.push({
-            number: issueNumber,
-            id: issueID,
-            issue: updatedIssue
-        });
+        // If some attributes are not permitted to be changed, try temporarily switching to issue status "open"
+        if (blockedAttributes.length > 0) {
+            const _status = currentIssueAttributes.status;
+            updatedIssue = await bim360.updateIssue(issueContainerID, issueID, { status: 'open' });
+            updatedIssue = await bim360.updateIssue(issueContainerID, issueID, newIssueAttributes);
+            if (!newIssueAttributes.status) {
+                updatedIssue = await bim360.updateIssue(issueContainerID, issueID, { status: _status });
+            }
+            results.succeeded.push({
+                number: issueNumber,
+                id: issueID,
+                issue: updatedIssue
+            });
+        } else {
+            const updatedIssue = await bim360.updateIssue(issueContainerID, issueID, newIssueAttributes);
+            results.succeeded.push({
+                number: issueNumber,
+                id: issueID,
+                issue: updatedIssue
+            });
+        }
     } catch (err) {
         results.failed.push({
             number: issueNumber,
