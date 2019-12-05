@@ -132,6 +132,7 @@ router.get('/:issue_container/config.json.zip', async function (req, res) {
     try {
         const twoLeggedToken = await authClient.authenticate(['data:read', 'data:write', 'data:create', 'account:read']);
         const config = JSON.stringify({
+            created: new Date().toISOString(),
             two_legged_token: twoLeggedToken.access_token,
             three_legged_token: req.session.access_token,
             region: region,
