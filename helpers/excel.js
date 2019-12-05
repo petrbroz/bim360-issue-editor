@@ -176,7 +176,7 @@ function fillIssues(worksheet, issues, types, users, locations, documents) {
     const IssueStatusValidation = {
         type: 'list',
         allowBlank: false,
-        formulae: ['"void,draft,open,closed"']
+        formulae: ['"void,draft,open,answered,work_completed,ready_to_inspect,in_dispute,not_approved,closed"']
     };
 
     const IssueOwnerValidation = {

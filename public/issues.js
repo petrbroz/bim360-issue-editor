@@ -264,9 +264,10 @@ class IssueView {
             </select>
         `;
 
+        const StatusOptions = ['void', 'draft', 'open', 'answered', 'work_completed', 'ready_to_inspect', 'in_dispute', 'not_approved', 'closed'];
         const generateStatusSelect = (issue) => `
             <select class="custom-select custom-select-sm issue-status" data-original-value="${issue.status}" ${disabled('status', issue) ? 'disabled' : ''}>
-                ${['draft', 'open', 'closed'].map(_status => `<option value="${_status}" ${(_status === issue.status) ? 'selected' : ''}>${_status}</option>`).join('\n')}
+                ${StatusOptions.map(_status => `<option value="${_status}" ${(_status === issue.status) ? 'selected' : ''}>${_status}</option>`).join('\n')}
             </select>
         `;
 
