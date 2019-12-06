@@ -133,9 +133,19 @@ router.get('/:issue_container/config.json.zip', async function (req, res) {
     const { issue_container } = req.params;
     const { hub_id, region, location_container_id, project_id } = req.query;
     try {
+        // Refresh the 3-legged token to make sure the user gets one "as fresh as possible"
+        const token = await authClient.refreshToken(config.scopes, req.session.refresh_token);
+        req.session.access_token = token.access_token;
+        req.session.refresh_token = token.refresh_token;
+        req.session.expires_at = Date.now() + token.expires_in * 1000;
+
+        // Get a fresh 2-legged token as well
         const twoLeggedToken = await authClient.authenticate(['data:read', 'data:write', 'data:create', 'account:read']);
-        const config = JSON.stringify({
-            created: new Date().toISOString(),
+
+        // Pack everything into a password-protected zip
+        const cfg = JSON.stringify({
+            created_at: new Date().toISOString(),
+            expires_at: new Date(req.session.expires_at).toISOString(),
             two_legged_token: twoLeggedToken.access_token,
             three_legged_token: req.session.access_token,
             region: region,
@@ -150,7 +160,7 @@ router.get('/:issue_container/config.json.zip', async function (req, res) {
         if (!fs.existsSync(tmpDir)) {
             fs.mkdirSync(tmpDir);
         }
-        fs.writeFileSync(jsonPath, config);
+        fs.writeFileSync(jsonPath, cfg);
         const zip = spawn('zip', ['-P', process.env.CLI_CONFIG_PASSWORD, 'config.zip', 'config.json'], { cwd: tmpDir });
         zip.on('exit', function(code) {
             if (code !== 0) {
