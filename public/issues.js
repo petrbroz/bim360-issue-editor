@@ -1,3 +1,7 @@
+function escape(str) {
+    return $('<div>').text(str).html();
+}
+
 class IssueView {
     constructor(accountClient, issueClient, locationClient, docsClient) {
         this.accountClient = accountClient;
@@ -63,7 +67,7 @@ class IssueView {
                 const $issueSubtypeDropdown = $target.closest('tr').find('select.issue-subtype');
                 $issueSubtypeDropdown.empty();
                 for (const issueSubtype of issueSubtypes) {
-                    $issueSubtypeDropdown.append(`<option value="${issueSubtype.id}">${issueSubtype.title}</option>`)
+                    $issueSubtypeDropdown.append(`<option value="${issueSubtype.id}">${escape(issueSubtype.title)}</option>`)
                 }
             }
         });
@@ -158,7 +162,7 @@ class IssueView {
         $creatorPicker.empty();
         $creatorPicker.append(`<option value="">(All)</option>`);
         for (const user of this.users) {
-            $creatorPicker.append(`<option value="${user.uid}">${user.name}</option>`);
+            $creatorPicker.append(`<option value="${user.uid}">${escape(user.name)}</option>`);
         }
 
         // Owner dropdown
@@ -166,7 +170,7 @@ class IssueView {
         $ownerPicker.empty();
         $ownerPicker.append(`<option value="">(All)</option>`);
         for (const user of this.users) {
-            $ownerPicker.append(`<option value="${user.uid}">${user.name}</option>`);
+            $ownerPicker.append(`<option value="${user.uid}">${escape(user.name)}</option>`);
         }
 
         // Issue type and subtype dropdowns
@@ -174,7 +178,7 @@ class IssueView {
         $issueTypePicker.empty();
         $issueTypePicker.append(`<option value="">(All)</option>`);
         for (const issueType of this.issueTypes) {
-            $issueTypePicker.append(`<option value="${issueType.id}">${issueType.title}</option>`);
+            $issueTypePicker.append(`<option value="${issueType.id}">${escape(issueType.title)}</option>`);
         }
         $issueTypePicker.on('change', () => {
             const $issueSubtypePicker = $('#issue-subtype-picker');
@@ -183,7 +187,7 @@ class IssueView {
             const issueType = this.issueTypes.find(it => it.id === $issueTypePicker.val());
             if (issueType) {
                 for (const issueSubtype of issueType.subtypes) {
-                    $issueSubtypePicker.append(`<option value="${issueSubtype.id}">${issueSubtype.title}</option>`);
+                    $issueSubtypePicker.append(`<option value="${issueSubtype.id}">${escape(issueSubtype.title)}</option>`);
                 }
             }
         });
@@ -238,7 +242,7 @@ class IssueView {
 
         const generateIssueTypeSelect = (issue) => `
             <select class="custom-select custom-select-sm issue-type" data-original-value="${issue.ng_issue_type_id}" ${disabled('ng_issue_type_id', issue) ? 'disabled' : ''}>
-                ${this.issueTypes.map(issueType => `<option value="${issueType.id}" ${(issueType.id === issue.ng_issue_type_id) ? 'selected' : ''}>${issueType.title}</option>`).join('\n')}
+                ${this.issueTypes.map(issueType => `<option value="${issueType.id}" ${(issueType.id === issue.ng_issue_type_id) ? 'selected' : ''}>${escape(issueType.title)}</option>`).join('\n')}
             </select>
         `;
 
@@ -247,14 +251,14 @@ class IssueView {
             const issueSubtypes = issueType ? issueType.subtypes : [];
             return `
                 <select class="custom-select custom-select-sm issue-subtype" data-original-value="${issue.ng_issue_subtype_id}" ${disabled('ng_issue_subtype_id', issue) ? 'disabled' : ''}>
-                    ${issueSubtypes.map(issueSubtype => `<option value="${issueSubtype.id}" ${(issueSubtype.id === issue.ng_issue_subtype_id) ? 'selected' : ''}>${issueSubtype.title}</option>`).join('\n')}
+                    ${issueSubtypes.map(issueSubtype => `<option value="${issueSubtype.id}" ${(issueSubtype.id === issue.ng_issue_subtype_id) ? 'selected' : ''}>${escape(issueSubtype.title)}</option>`).join('\n')}
                 </select>
             `;
         };
 
         const generateOwnerSelect = (issue) => `
-            <select class="custom-select custom-select-sm issue-owner" data-original-value="${issue.owner}" ${disabled('owner', issue) ? 'disabled' : ''}>
-                ${this.users.map(user => `<option value="${user.uid}" ${(user.uid === issue.owner) ? 'selected' : ''}>${user.name}</option>`).join('\n')}
+            <select class="custom-select custom-select-sm issue-owner" data-original-value="${escape(issue.owner)}" ${disabled('owner', issue) ? 'disabled' : ''}>
+                ${this.users.map(user => `<option value="${user.uid}" ${(user.uid === issue.owner) ? 'selected' : ''}>${escape(user.name)}</option>`).join('\n')}
             </select>
         `;
 
@@ -266,7 +270,7 @@ class IssueView {
                     let parentId = location.parentId;
                     while (parentId) {
                         const parent = this.locations.find(l => l.id === parentId);
-                        name = parent.name + ' > ' + name;
+                        name = escape(parent.name + ' > ' + name);
                         parentId = parent.parentId;
                     }
                     return `<option value="${location.id}" ${(location.id === issue.lbs_location) ? 'selected' : ''}>${name}</option>`;
@@ -285,6 +289,9 @@ class IssueView {
 
         // Update the table
         for (const issue of issues) {
+            const title = escape(issue.title || '');
+            const description = escape(issue.description || '');
+            const answer = escape(issue.answer || '')
             $tbody.append(`
                 <tr>
                     <td class="center">
@@ -297,10 +304,10 @@ class IssueView {
                         ${generateIssueSubtypeSelect(issue)}
                     </td>
                     <td>
-                        <input type="text" class="form-control form-control-sm issue-title" data-original-value="${issue.title || ''}" value="${issue.title || ''}" ${disabled('title', issue) ? 'disabled' : ''}>
+                        <input type="text" class="form-control form-control-sm issue-title" data-original-value="${title}" value="${title}" ${disabled('title', issue) ? 'disabled' : ''}>
                     </td>
                     <td>
-                        <input type="text" class="form-control form-control-sm issue-description" data-original-value="${issue.description || ''}" value="${issue.description || ''}" ${disabled('description', issue) ? 'disabled' : ''}>
+                        <input type="text" class="form-control form-control-sm issue-description" data-original-value="${description}" value="${description}" ${disabled('description', issue) ? 'disabled' : ''}>
                     </td>
                     <td>
                         ${generateOwnerSelect(issue)}
@@ -315,7 +322,7 @@ class IssueView {
                         ${generateStatusSelect(issue)}
                     </td>
                     <td>
-                        <input type="text" class="form-control form-control-sm issue-answer" data-original-value="${issue.answer || ''}" value="${issue.answer || ''}" ${disabled('answer', issue) ? 'disabled' : ''}>
+                        <input type="text" class="form-control form-control-sm issue-answer" data-original-value="${answer}" value="${answer}" ${disabled('answer', issue) ? 'disabled' : ''}>
                     </td>
                     <td class="center">
                         ${
@@ -374,7 +381,7 @@ class IssueView {
                 const comments = await issueClient.listIssueComments(issueId);
                 const html = `
                     <ul>
-                        ${comments.map(comment => `<li>[${new Date(comment.created_at).toLocaleString()}] ${comment.body}</li>`).join('\n')}
+                        ${comments.map(comment => `<li>[${new Date(comment.created_at).toLocaleString()}] ${escape(comment.body)}</li>`).join('\n')}
                     </ul>
                 `;
                 $this.attr('data-content', html);
@@ -406,7 +413,7 @@ class IssueView {
                             <li>
                                 [${new Date(attachment.created_at).toLocaleString()}]
                                 <a target="_blank" href="/api/issues/${issueContainerId}/${issueId}/attachments/${attachment.id}">
-                                    <div>${attachment.name}</div>
+                                    <div>${escape(attachment.name)}</div>
                                     ${
                                         (attachment.name.toLowerCase().endsWith('.png') || attachment.name.toLowerCase().endsWith('.jpg') || attachment.name.toLowerCase().endsWith('.jpeg'))
                                             ? `<img alt="Loading..." src="/api/issues/${issueContainerId}/${issueId}/attachments/${attachment.id}" width="64">`
@@ -440,7 +447,7 @@ class IssueView {
         $('#container').append(`
             <div id="issues-loading-spinner" class="d-flex justify-content-center">
                 <div class="spinner-border text-primary" role="status">
-                    <span class="sr-only">${message}</span>
+                    <span class="sr-only">${escape(message)}</span>
                 </div>
             </div>
         `);
