@@ -103,6 +103,13 @@ axios@^0.19.0:
     follow-redirects "1.5.10"
     is-buffer "^2.0.2"
 
+axios@^0.19.2:
+  version "0.19.2"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-0.19.2.tgz#3ea36c5d8818d0d5f8a8a97a6d36b86cdc00cb27"
+  integrity sha512-fjgm5MvRHLhx+osE2xoekY70AhARk3a6hkN+3Io1jc00jtquGvxYlKlsFUhmUET0V5te6CcZI7lcv2Ym61mjHA==
+  dependencies:
+    follow-redirects "1.5.10"
+
 balanced-match@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.0.tgz#89b4d199ab2bee49de164ea02b89ce462d71b767"
@@ -460,15 +467,15 @@ follow-redirects@1.5.10:
   dependencies:
     debug "=3.1.0"
 
-forge-server-utils@^8.0.9:
-  version "8.0.9"
-  resolved "https://registry.yarnpkg.com/forge-server-utils/-/forge-server-utils-8.0.9.tgz#7b0fc95a8fd02ad628b1afd47d3e7478cb05c6a8"
-  integrity sha512-R10BH5K3nVp43Slw5S0LB6y0OiaeyR1G+3LYiIB8YCm5NVGUg+grbYf5FArYPBuYq2Gk+JoaoeixibWHdbogpg==
+forge-server-utils@^8.1.1:
+  version "8.1.1"
+  resolved "https://registry.yarnpkg.com/forge-server-utils/-/forge-server-utils-8.1.1.tgz#ae3efd4e8eb3f6187915b27908b6e871dc0271d4"
+  integrity sha512-ytUMYL1+slqXw+NsR5UMZvS3uyiBuM3uqenbZiakLaGVZ7MOKzJ/koHq0+n5R0jxuIQJBf2aLvuXOmzXkEV/AA==
   dependencies:
     "@types/adm-zip" "^0.4.32"
     "@types/fs-extra" "^8.0.0"
     adm-zip "^0.4.13"
-    axios "^0.19.0"
+    axios "^0.19.2"
     form-data "^2.5.1"
     fs-extra "^8.1.0"
 
