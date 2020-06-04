@@ -1,4 +1,5 @@
 const { BIM360Client } = require('forge-server-utils');
+const axios = require('axios').default;
 const ExcelJS = require('exceljs');
 
 /**
@@ -92,36 +93,51 @@ async function loadLocations(bim360, locationContainerID) {
             console.log('Fetching BIM360 locations page:', page);
             locations = await bim360.listLocationNodes(locationContainerID, page); 
         }
-    } catch(err) {
+    } catch (err) {
         console.warn('Could not load BIM360 locations. The "Locations" worksheet will be empty.');
     }
     return results;
 }
 
 async function loadDocuments(bim360, hubId, projectId) {
-    let results = [];
-
-    async function collect(folderId) {
-        const items = await bim360.listContents(projectId, folderId);
-        const subtasks = [];
-        for (const item of items) {
-            switch (item.type) {
-                case 'items':
-                    results.push(item);
-                    break;
-                case 'folders':
-                    subtasks.push(collect(item.id));
-                    break;
+    // let results = [];
+    // async function collect(folderId) {
+    //     const items = await bim360.listContents(projectId, folderId);
+    //     const subtasks = [];
+    //     for (const item of items) {
+    //         switch (item.type) {
+    //             case 'items':
+    //                 results.push(item);
+    //                 break;
+    //             case 'folders':
+    //                 subtasks.push(collect(item.id));
+    //                 break;
+    //         }
+    //     }
+    //     await Promise.all(subtasks);
+    // }
+    async function listFolderContents(projectId, folderId, token) {
+        let url = `https://developer.api.autodesk.com/data/v1/projects/${projectId}/folders/${folderId}/search`;
+        let opts = {
+            headers: {
+                'Authorization': `Bearer ${token}`
             }
+        };
+        let response = await axios.get(url, opts);
+        let results = response.data.data;
+        while (response.data.links && response.data.links.next) {
+            url = response.data.links.next.href;
+            response = await axios.get(url, opts);
+            results = results.concat(response.data.data);
         }
-        await Promise.all(subtasks);
+        return results;
     }
 
     console.log('Fetching BIM360 documents');
     const folders = await bim360.listTopFolders(hubId, projectId);
-    const tasks = folders.map(folder => collect(folder.id));
-    await Promise.all(tasks);
-    return results;
+    const tasks = folders.map(folder => listFolderContents(projectId, folder.id, bim360.token));
+    const results = await Promise.all(tasks);
+    return [].concat.apply([], results);
 }
 
 function fillIssues(worksheet, issues, types, users, locations, documents) {
@@ -159,9 +175,9 @@ function fillIssues(worksheet, issues, types, users, locations, documents) {
     };
 
     const IssueDocumentFormat = (documentID) => {
-        const document = documents.find(d => d.id === documentID);
+        const document = documents.find(d => d.relationships.item && d.relationships.item.data.id === documentID);
         if (document) {
-            return encodeNameID(document.displayName, document.id);
+            return encodeNameID(document.attributes.displayName, document.id);
         } else {
             return '';
         }
@@ -333,12 +349,16 @@ function fillIssueDocuments(worksheet, documents) {
         { key: 'document-full', header: '', width: 64 } // Full representation to show in the "issues" worksheet (that can be later decoded back into IDs)
     ];
 
-    for (const item of documents) {
+    for (const version of documents) {
+        if (version.relationships.item) {
+            const id = version.relationships.item.data.id;
+            const displayName = version.attributes.displayName;
         worksheet.addRow({
-            'document-urn': item.id,
-            'document-name': item.displayName,
-            'document-full': encodeNameID(item.displayName, item.id)
+                'document-urn': id,
+                'document-name': displayName,
+                'document-full': encodeNameID(displayName, id)
         });
+    }
     }
 
     // Setup data validation and protection where needed
