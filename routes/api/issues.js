@@ -5,12 +5,14 @@ const spawn = require('child_process').spawn;
 const express = require('express');
 const { AuthenticationClient, BIM360Client } = require('forge-server-utils');
 const axios = require('axios').default;
-const multer  = require('multer');
+const multer = require('multer');
+const mail = require('@sendgrid/mail');
 const upload = multer({ dest: 'uploads/' });
 
 const config = require('../../config');
 const { exportIssues, importIssues } = require('../../helpers/excel');
 
+mail.setApiKey(config.sendgrid_key);
 let authClient = new AuthenticationClient(config.client_id, config.client_secret);
 let router = express.Router();
 
@@ -39,7 +41,7 @@ router.use('/', async function (req, res, next) {
                 req.session.access_token = token.access_token;
                 req.session.refresh_token = token.refresh_token;
                 req.session.expires_at = Date.now() + token.expires_in * 1000;
-            } catch(err) {
+            } catch (err) {
                 handleError(err, res);
                 return;
             }
@@ -87,7 +89,7 @@ router.get('/:issue_container', async function (req, res) {
 
         const issues = await req.bim360.listIssues(issue_container, filter, page);
         res.json(issues);
-    } catch(err) {
+    } catch (err) {
         handleError(err, res);
     }
 });
@@ -110,7 +112,53 @@ router.get('/:issue_container/export', async function (req, res) {
             page_limit: limit
         });
         res.type('.xlsx').send(excel);
-    } catch(err) {
+    } catch (err) {
+        handleError(err, res);
+    }
+});
+
+// GET /api/issues/:issue_container/export-email
+router.get('/:issue_container/export-email', async function (req, res) {
+    const { issue_container } = req.params;
+    const { hub_id, region, location_container_id, project_id } = req.query;
+    const { user_email } = req.session;
+    try {
+        const twoLeggedToken = await authClient.authenticate(['data:read', 'data:write', 'data:create', 'account:read']);
+        if (user_email) {
+            exportIssues({
+                two_legged_token: twoLeggedToken.access_token,
+                three_legged_token: req.session.access_token,
+                region: region,
+                hub_id: hub_id,
+                issue_container_id: issue_container,
+                location_container_id: location_container_id,
+                project_id: project_id
+            }).then(excel => {
+                const msg = {
+                    to: user_email,
+                    from: 'petr.broz@autodesk.com',
+                    subject: 'Exported BIM360 Issues',
+                    text: 'Attached you will find the BIM360 issues exported from http://bim360-issue-editor.herokuapp.com.',
+                    attachments: [
+                        {
+                            content: excel.toString('base64'),
+                            filename: 'issues.xlsx',
+                            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                            disposition: 'attachment'
+                        }
+                    ]
+                };
+                return mail.send(msg);
+            }).then(resp => {
+                console.log('SendGrid response', resp);
+            }).catch(err => {
+                throw err;
+            });
+            res.render('message', { session: req.session, message: `Issues will be exported and emailed to ${user_email}.` });
+        } else {
+            res.render('error', { session: req.session, error: `E-mail address not available or not verified.` });
+        }
+    } catch (err) {
         handleError(err, res);
     }
 });
@@ -122,7 +170,7 @@ router.post('/:issue_container/import', upload.single('xlsx'), async function (r
     try {
         const results = await importIssues(xlsx, issue_container, req.session.access_token);
         res.json(results);
-    } catch(err) {
+    } catch (err) {
         handleError(err, res);
     }
 });
@@ -162,7 +210,7 @@ router.get('/:issue_container/config.json.zip', async function (req, res) {
         }
         fs.writeFileSync(jsonPath, cfg);
         const zip = spawn('zip', ['-P', process.env.CLI_CONFIG_PASSWORD, 'config.zip', 'config.json'], { cwd: tmpDir });
-        zip.on('exit', function(code) {
+        zip.on('exit', function (code) {
             if (code !== 0) {
                 handleError('Could not compress the config file.', res);
                 return;
@@ -175,7 +223,7 @@ router.get('/:issue_container/config.json.zip', async function (req, res) {
                 fs.unlinkSync(zipPath);
             });
         });
-    } catch(err) {
+    } catch (err) {
         handleError(err, res);
     }
 });
@@ -186,7 +234,7 @@ router.get('/:issue_container/root-causes', async function (req, res) {
     try {
         const rootCauses = await req.bim360.listIssueRootCauses(issue_container);
         res.json(rootCauses);
-    } catch(err) {
+    } catch (err) {
         handleError(err, res);
     }
 });
@@ -197,7 +245,7 @@ router.get('/:issue_container/issue-types', async function (req, res) {
     try {
         const issueTypes = await req.bim360.listIssueTypes(issue_container, true);
         res.json(issueTypes);
-    } catch(err) {
+    } catch (err) {
         handleError(err, res);
     }
 });
@@ -208,7 +256,7 @@ router.get('/:issue_container/attr-definitions', async function (req, res) {
     try {
         const attrDefinitions = await req.bim360.listIssueAttributeDefinitions(issue_container);
         res.json(attrDefinitions);
-    } catch(err) {
+    } catch (err) {
         handleError(err, res);
     }
 });
@@ -219,7 +267,7 @@ router.get('/:issue_container/attr-mappings', async function (req, res) {
     try {
         const attrMappings = await req.bim360.listIssueAttributeMappings(issue_container);
         res.json(attrMappings);
-    } catch(err) {
+    } catch (err) {
         handleError(err, res);
     }
 });
@@ -231,7 +279,7 @@ router.patch('/:issue_container/:issue', async function (req, res) {
         const attrs = req.body;
         const updatedIssue = await req.bim360.updateIssue(issue_container, issue, attrs);
         res.json(updatedIssue);
-    } catch(err) {
+    } catch (err) {
         handleError(err, res);
     }
 });
@@ -242,7 +290,7 @@ router.get('/:issue_container/:issue/comments', async function (req, res) {
     try {
         const comments = await req.bim360.listIssueComments(issue_container, issue);
         res.json(comments);
-    } catch(err) {
+    } catch (err) {
         handleError(err, res);
     }
 });
@@ -253,7 +301,7 @@ router.get('/:issue_container/:issue/attachments', async function (req, res) {
     try {
         const attachments = await req.bim360.listIssueAttachments(issue_container, issue);
         res.json(attachments);
-    } catch(err) {
+    } catch (err) {
         handleError(err, res);
     }
 });
@@ -277,7 +325,7 @@ router.get('/:issue_container/:issue/attachments/:id', async function (req, res)
         } else {
             res.status(404).end();
         }
-    } catch(err) {
+    } catch (err) {
         handleError(err, res);
     }
 });

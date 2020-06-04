@@ -109,11 +109,14 @@
                 </li>
             </ul>
         </nav>
-        <a href="/api/issues/<%= issueContainer %>/export?hub_id=<%= hub.id %>&region=<%= hub.region %>&location_container_id=<%= locationContainer %>&project_id=<%= project.id %>&offset=0&limit=100" target="_blank" class="btn btn-sm btn-light ml-2">
-            <i class="fas fa-file-import"></i> Export First 100 Issues
-        </a>
+        <!-- <a href="/api/issues/<%= issueContainer %>/export?hub_id=<%= hub.id %>&region=<%= hub.region %>&location_container_id=<%= locationContainer %>&project_id=<%= project.id %>&offset=0&limit=100" target="_blank" class="btn btn-sm btn-light ml-2">
+            <i class="fas fa-file-import"></i> Export First 100
+        </a> -->
         <a href="/api/issues/<%= issueContainer %>/export?hub_id=<%= hub.id %>&region=<%= hub.region %>&location_container_id=<%= locationContainer %>&project_id=<%= project.id %>" target="_blank" class="btn btn-sm btn-light ml-2">
-            <i class="fas fa-file-import"></i> Export All Issues
+            <i class="fas fa-file-import"></i> Export & Download Issues
+        </a>
+        <a href="/api/issues/<%= issueContainer %>/export-email?hub_id=<%= hub.id %>&region=<%= hub.region %>&location_container_id=<%= locationContainer %>&project_id=<%= project.id %>" target="_blank" class="btn btn-sm btn-light ml-2">
+            <i class="fas fa-file-import"></i> Export & E-mail Issues
         </a>
         <a id="import-issues" href="#" class="btn btn-sm btn-light ml-2">
             <i class="fas fa-file-export"></i> Import Issues

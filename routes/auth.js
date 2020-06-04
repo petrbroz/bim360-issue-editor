@@ -20,6 +20,7 @@ router.get('/callback', async function (req, res) {
         req.session.expires_at = Date.now() + token.expires_in * 1000;
         const profile = await authClient.getUserProfile(req.session.access_token);
         req.session.user_name = profile.userName;
+        req.session.user_email = profile.emailVerified ? profile.emailId : '';
         res.redirect('/');
     } catch(err) {
         res.status(400).json(err);
@@ -32,6 +33,7 @@ router.get('/logout', function (req, res) {
     delete req.session.refresh_token;
     delete req.session.expires_at;
     delete req.session.user_name;
+    delete req.session.user_email;
     res.redirect('/');
 });
 
