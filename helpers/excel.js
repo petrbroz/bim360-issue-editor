@@ -519,7 +519,7 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken, sequenti
     return results;
 }
 
-async function updateIssue(bim360, issueContainerID, currentIssueAttributes, newIssueAttributes, blockedAttributes, issueNumber, results) {
+async function updateIssue(bim360, issueContainerID, issueID, currentIssueAttributes, newIssueAttributes, blockedAttributes, issueNumber, results) {
     try {
         // If some attributes are not permitted to be changed, try temporarily switching to issue status "open"
         if (blockedAttributes.length > 0) {
