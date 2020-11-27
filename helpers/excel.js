@@ -467,36 +467,38 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken, sequenti
 
             // Check if the issue exists in BIM360
             if (!currentIssueAttributes) {
-                results.failed.push({ id: issueID, row: rowNumber, error: 'Issue not found in BIM360.' });
-                return;
-            }
+                //results.failed.push({ id: issueID, row: rowNumber, error: 'Issue not found in BIM360.' });
+                tasks.push(createIssue(bim360, issueContainerID, newIssueAttributes, results));
+ 
+            }else{
 
-            const issueNumber = currentIssueAttributes.identifier;
+                const issueNumber = currentIssueAttributes.identifier;
 
-            // Check if any of the new issue properties differ from the original in BIM360, and if they *can* be changed
-            let blockedAttributeUpdates = [];
-            for (const key of Object.getOwnPropertyNames(newIssueAttributes)) {
-                if (currentIssueAttributes[key] == newIssueAttributes[key]) { // both values are equal
-                    delete newIssueAttributes[key];
-                } else if (!currentIssueAttributes[key] && !newIssueAttributes[key]) { // both values are "falsy" (e.g., an empty string and a null)
-                    delete newIssueAttributes[key];
-                } else if (currentIssueAttributes.permitted_attributes.indexOf(key) === -1) { // field change not permitted
-                    blockedAttributeUpdates.push(key);
+                // Check if any of the new issue properties differ from the original in BIM360, and if they *can* be changed
+                let blockedAttributeUpdates = [];
+                for (const key of Object.getOwnPropertyNames(newIssueAttributes)) {
+                    if (currentIssueAttributes[key] == newIssueAttributes[key]) { // both values are equal
+                        delete newIssueAttributes[key];
+                    } else if (!currentIssueAttributes[key] && !newIssueAttributes[key]) { // both values are "falsy" (e.g., an empty string and a null)
+                        delete newIssueAttributes[key];
+                    } else if (currentIssueAttributes.permitted_attributes.indexOf(key) === -1) { // field change not permitted
+                        blockedAttributeUpdates.push(key);
+                    }
                 }
-            }
-            // if (blockedAttributeUpdates.length > 0) {
-            //     results.failed.push({ number: issueNumber, id: issueID, error: `Changing these issue fields is not permitted: ${blockedAttributeUpdates.join(', ')}.` });
-            //     return;
-            // }
-            if (Object.getOwnPropertyNames(newIssueAttributes).length === 0) {
-                return; // No fields to update
-            }
-
-            if (sequential) {
-                tasks.push({ bim360, issueContainerID, issueID, currentIssueAttributes, newIssueAttributes, blockedAttributeUpdates, issueNumber, results });
-            } else {
-                tasks.push(updateIssue(bim360, issueContainerID, issueID, currentIssueAttributes, newIssueAttributes, blockedAttributeUpdates, issueNumber, results));
-            }
+                // if (blockedAttributeUpdates.length > 0) {
+                //     results.failed.push({ number: issueNumber, id: issueID, error: `Changing these issue fields is not permitted: ${blockedAttributeUpdates.join(', ')}.` });
+                //     return;
+                // }
+                if (Object.getOwnPropertyNames(newIssueAttributes).length === 0) {
+                    return; // No fields to update
+                }
+    
+                if (sequential) {
+                    tasks.push({ bim360, issueContainerID, issueID, currentIssueAttributes, newIssueAttributes, blockedAttributeUpdates, issueNumber, results });
+                } else {
+                    tasks.push(updateIssue(bim360, issueContainerID, issueID, currentIssueAttributes, newIssueAttributes, blockedAttributeUpdates, issueNumber, results));
+                }
+            } 
         } catch (err) {
             console.error('Error when parsing spreadsheet row', rowNumber);
             throw new Error(err);
@@ -517,7 +519,7 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken, sequenti
     return results;
 }
 
-async function updateIssue(bim360, issueContainerID, issueID, currentIssueAttributes, newIssueAttributes, blockedAttributes, issueNumber, results) {
+async function updateIssue(bim360, issueContainerID, currentIssueAttributes, newIssueAttributes, blockedAttributes, issueNumber, results) {
     try {
         // If some attributes are not permitted to be changed, try temporarily switching to issue status "open"
         if (blockedAttributes.length > 0) {
@@ -544,6 +546,23 @@ async function updateIssue(bim360, issueContainerID, issueID, currentIssueAttrib
         results.failed.push({
             number: issueNumber,
             id: issueID,
+            error: JSON.stringify(err)
+        });
+    }
+}
+
+async function createIssue(bim360, issueContainerID, newIssueAttributes, results) {
+    try { 
+        const createdIssue = await bim360.createIssue(issueContainerID, newIssueAttributes);
+        results.succeeded.push({
+            number: createdIssue.identifier,
+            id: createdIssue.id,
+            issue: createdIssue
+        }); 
+    } catch (err) {
+        results.failed.push({
+            number: 'new issue failed- no number',
+            id: 'new issue failed - no id',
             error: JSON.stringify(err)
         });
     }
