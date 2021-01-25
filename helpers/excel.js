@@ -215,6 +215,7 @@ function fillIssues(worksheet, issues, types, users, locations, documents) {
 
     const IssueColumns = [
         { id: 'id',             propertyName: 'id',                     columnTitle: 'ID',          columnWidth: 8,     locked: true },
+        { id: 'identifier',     propertyName: 'identifier',             columnTitle: '#',           columnWidth: 8,     locked: true },
         { id: 'type',           propertyName: 'ng_issue_subtype_id',    columnTitle: 'Type',        columnWidth: 16,    locked: true,   format: IssueTypeFormat,        validation: IssueTypeValidation },
         { id: 'title',          propertyName: 'title',                  columnTitle: 'Title',       columnWidth: 32,    locked: false },
         { id: 'description',    propertyName: 'description',            columnTitle: 'Description', columnWidth: 32,    locked: false },
