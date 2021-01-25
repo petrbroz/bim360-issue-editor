@@ -11,7 +11,7 @@ router.get('/login', function (req, res) {
     res.redirect(url);
 });
 
-// GET /auth/callbacck
+// GET /auth/callback
 router.get('/callback', async function (req, res) {
     try {
         const token = await authClient.getToken(req.query.code, config.redirect_uri);
