@@ -47,19 +47,20 @@ router.use('/', async function (req, res, next) {
 router.get('/:project_id', async function (req, res) {
     const { project_id } = req.params;
     try {
-        const users = await loadProjectUsers(project_id, req.session.access_token);
+        const users = await loadProjectUsers(project_id);
         res.json(users);
     } catch(err) {
         handleError(err, res);
     }
 });
 
-async function loadProjectUsers(projectId, token) {
+async function loadProjectUsers(projectId) {
+    const auth = await authClient.authenticate(['account:read']);
     const PageSize = 64;
     let url = `https://developer.api.autodesk.com/bim360/admin/v1/projects/${projectId}/users?limit=${PageSize}`;
     let opts = {
         headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${auth.access_token}`
         }
     };
     let response = await axios.get(url, opts);
