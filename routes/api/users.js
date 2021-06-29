@@ -1,6 +1,7 @@
 const express = require('express');
 const { AuthenticationClient, BIM360Client } = require('forge-server-utils');
 const config = require('../../config');
+const axios = require('axios').default;
 
 let authClient = new AuthenticationClient(config.client_id, config.client_secret);
 let router = express.Router();
@@ -42,30 +43,33 @@ router.use('/', async function (req, res, next) {
     }
 });
 
-// GET /api/account/:hub/users
-router.get('/:account/users', async function (req, res) {
-    const { account } = req.params;
+// GET /api/users/:project_id
+router.get('/:project_id', async function (req, res) {
+    const { project_id } = req.params;
     try {
-        let filter = {
-            partial: true // Perform a fuzzy search
-        };
-        if (req.query.name) {
-            filter.name = req.query.name;
-        }
-        if (req.query.email) {
-            filter.email = req.query.email;
-        }
-        if (req.query.company_name) {
-            filter.company_name = req.query.company_name;
-        }
-        if (req.query.operator) {
-            filter.operator = req.query.operator;
-        }
-        const users = await req.bim360.listUsers(account, filter);
+        const users = await loadProjectUsers(project_id, req.session.access_token);
         res.json(users);
     } catch(err) {
         handleError(err, res);
     }
 });
+
+async function loadProjectUsers(projectId, token) {
+    const PageSize = 64;
+    let url = `https://developer.api.autodesk.com/bim360/admin/v1/projects/${projectId}/users?limit=${PageSize}`;
+    let opts = {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    };
+    let response = await axios.get(url, opts);
+    let results = response.data.results;
+    while (response.data.pagination && response.data.pagination.nextUrl) {
+        url = response.data.pagination.nextUrl;
+        response = await axios.get(url, opts);
+        results = results.concat(response.data.results);
+    }
+    return results;
+}
 
 module.exports = router;

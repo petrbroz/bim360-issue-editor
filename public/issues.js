@@ -3,8 +3,8 @@ function escape(str) {
 }
 
 class IssueView {
-    constructor(accountClient, issueClient, locationClient, docsClient) {
-        this.accountClient = accountClient;
+    constructor(userClient, issueClient, locationClient, docsClient) {
+        this.userClient = userClient;
         this.issueClient = issueClient;
         this.locationClient = locationClient;
         this.docsClient = docsClient;
@@ -20,7 +20,7 @@ class IssueView {
         this.showSpinner('Initializing issue owners and types...');
         try {
             const [users, issueTypes] = await Promise.all([
-                this.accountClient.listUsers(),
+                this.userClient.listUsers(),
                 this.issueClient.listIssueTypes(),
             ]);
             this.users = users;
@@ -555,20 +555,15 @@ class IssueClient {
     }
 }
 
-class AccountClient {
-    constructor(accountId, region) {
-        this.accountId = accountId;
+class UsersClient {
+    constructor(projectId, region) {
+        this.projectId = projectId;
         this.region = region;
     }
 
-    async _get(endpoint, params = {}) {
-        const url = new URL(`/api/account/${this.accountId}` + endpoint, window.location.origin);
+    async listUsers() {
+        const url = new URL(`/api/users/${this.projectId}`, window.location.origin);
         url.searchParams.append('region', this.region);
-        for (const key of Object.keys(params)) {
-            if (params[key]) {
-                url.searchParams.append(key, params[key]);
-            }
-        }
         const response = await fetch(url.toString());
         if (response.ok) {
             const json = await response.json();
@@ -577,32 +572,6 @@ class AccountClient {
             const message = await response.text();
             throw new Error(message);
         }
-    }
-
-    async _patch(endpoint, body, params = {}) {
-        const url = new URL(`/api/account/${this.accountId}` + endpoint, window.location.origin);
-        url.searchParams.append('region', this.region);
-        for (const key of Object.keys(params)) {
-            if (params[key]) {
-                url.searchParams.append(key, params[key]);
-            }
-        }
-        const response = await fetch(url.toString(), {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-        if (response.ok) {
-            const json = await response.json();
-            return json;
-        } else {
-            const message = await response.text();
-            throw new Error(message);
-        }
-    }
-
-    async listUsers() {
-        return this._get(`/users`);
     }
 }
 
