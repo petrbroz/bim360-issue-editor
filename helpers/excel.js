@@ -36,7 +36,7 @@ async function exportIssues(opts) {
     const [issues, types, users, locations, documents] = await Promise.all([
         loadIssues(userContextBIM360, issue_container_id, page_offset, page_limit),
         loadIssueTypes(userContextBIM360, issue_container_id),
-        loadUsers(appContextBIM360, hub_id.replace('b.', '')),
+        loadUsers(project_id, two_legged_token),
         loadLocations(userContextBIM360, location_container_id),
         loadDocuments(userContextBIM360, hub_id, project_id)
     ]);
@@ -75,10 +75,24 @@ async function loadIssueTypes(bim360, issueContainerID) {
     return issueTypes;
 }
 
-async function loadUsers(bim360, accountId) {
-    console.log('Fetching BIM360 users.');
-    const users = await bim360.listUsers(accountId);
-    return users;
+async function loadUsers(projectId, token) {
+    const PageSize = 64;
+    console.log('Fetching BIM360 project users.');
+
+    let url = `https://developer.api.autodesk.com/bim360/admin/v1/projects/${projectId}/users?limit=${PageSize}`;
+    let opts = {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    };
+    let response = await axios.get(url, opts);
+    let results = response.data.results;
+    while (response.data.pagination && response.data.pagination.nextUrl) {
+        url = response.data.pagination.nextUrl;
+        response = await axios.get(url, opts);
+        results = results.concat(response.data.results);
+    }
+    return results;
 }
 
 async function loadLocations(bim360, locationContainerID) {
