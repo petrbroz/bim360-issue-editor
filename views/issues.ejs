@@ -148,7 +148,7 @@
             const url = new URL(window.location.href);
             const region = '<%= hub.region %>';
             const issueView = new IssueView(
-                new AccountClient('<%= account %>', region),
+                new UsersClient('<%= project.id %>', region),
                 new IssueClient('<%= issueContainer %>', region),
                 new LocationClient('<%= locationContainer %>', region),
                 new DocsClient('<%= project.id %>', region)
