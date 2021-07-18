@@ -33,13 +33,17 @@ async function exportIssues(opts) {
     const userContextBIM360 = new BIM360Client({ token: three_legged_token }, undefined, region);
 
     console.log('Fetching BIM360 data for export.');
-    const [issues, types, users, locations, documents] = await Promise.all([
+    const [issues, types, users, locations] = await Promise.all([
         loadIssues(userContextBIM360, issue_container_id, page_offset, page_limit),
         loadIssueTypes(userContextBIM360, issue_container_id),
         loadUsers(appContextBIM360, hub_id.replace('b.', '')),
-        loadLocations(userContextBIM360, location_container_id),
-        loadDocuments(userContextBIM360, hub_id, project_id)
+        loadLocations(userContextBIM360, location_container_id)
     ]);
+    const documents = await loadReferencedDocuments(userContextBIM360, project_id, issues);
+
+    console.log(issues);
+    console.log(documents);
+
     console.log('Generating XLSX spreadsheet.');
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'bim360-issue-editor';
@@ -126,6 +130,7 @@ async function loadDocuments(bim360, hubId, projectId) {
         let response = await axios.get(url, opts);
         let results = response.data.data;
         while (response.data.links && response.data.links.next) {
+            console.log('Fetching BIM360 documents batch:', response.data.links.self);
             url = response.data.links.next.href;
             response = await axios.get(url, opts);
             results = results.concat(response.data.data);
@@ -138,6 +143,31 @@ async function loadDocuments(bim360, hubId, projectId) {
     const tasks = folders.map(folder => listFolderContents(projectId, folder.id, bim360.token));
     const results = await Promise.all(tasks);
     return [].concat.apply([], results);
+}
+
+async function loadReferencedDocuments(bim360, projectId, issues) {
+    // Extract target_urn from issues array then filter null & duplicate urns 
+    const issuesTragetUrns = issues.map(issue => issue.target_urn);
+    const uniqueIssuesTargetUrns = issuesTragetUrns.filter((value, index, self) => value && self.indexOf(value) === index);
+
+    let referencedDocuments = [];
+    for (const targetUrn of uniqueIssuesTargetUrns) {
+        try {
+            console.log("Retrieving BIM360 Document details", targetUrn);
+            const document = await bim360.getItemDetails(projectId, targetUrn);
+            referencedDocuments.push(document);
+            //console.log(document);
+        } catch (err) {
+            console.error(err);
+            if (err.isAxiosError && err.response.status == 429) {  // Rate limit: Quota limit exceeded.
+                const retryAfter = parseInt(err.response.headers["retry-after"]);
+                if (retryAfter)
+                    await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+            }
+        }
+    };
+
+    return referencedDocuments;
 }
 
 function fillIssues(worksheet, issues, types, users, locations, documents) {
@@ -175,9 +205,9 @@ function fillIssues(worksheet, issues, types, users, locations, documents) {
     };
 
     const IssueDocumentFormat = (documentID) => {
-        const document = documents.find(d => d.relationships.item && d.relationships.item.data.id === documentID);
+        const document = documents.find(d => d.id === documentID);
         if (document) {
-            return encodeNameID(document.attributes.displayName, document.id);
+            return encodeNameID(document.displayName, document.id);
         } else {
             return '';
         }
@@ -350,16 +380,14 @@ function fillIssueDocuments(worksheet, documents) {
         { key: 'document-full', header: '', width: 64 } // Full representation to show in the "issues" worksheet (that can be later decoded back into IDs)
     ];
 
-    for (const version of documents) {
-        if (version.relationships.item) {
-            const id = version.relationships.item.data.id;
-            const displayName = version.attributes.displayName;
+    for (const document of documents) {
+        const id = document.id;
+        const displayName = document.displayName;
         worksheet.addRow({
                 'document-urn': id,
                 'document-name': displayName,
                 'document-full': encodeNameID(displayName, id)
         });
-    }
     }
 
     // Setup data validation and protection where needed
