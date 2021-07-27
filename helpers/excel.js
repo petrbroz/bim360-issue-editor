@@ -170,10 +170,19 @@ function fillIssues(worksheet, issues, types, users, locations, documents) {
         return '';
     };
 
-    const IssueOwnerFormat = (ownerID) => {
+    const IssueUserFormat = (ownerID) => {
         const user = users.find(u => u.autodeskId === ownerID);
         if (user) {
             return encodeNameID(user.name, user.autodeskId);
+        } else {
+            return '';
+        }
+    };
+
+    const IssueDateFormat = (issueDateString) => {
+        if (issueDateString) {
+            let issueDate = new Date(issueDateString);
+            return issueDate.toISOString().replace(/T/, ' ').replace(/\..+/, '');
         } else {
             return '';
         }
@@ -209,7 +218,7 @@ function fillIssues(worksheet, issues, types, users, locations, documents) {
         formulae: ['"void,draft,open,answered,work_completed,ready_to_inspect,in_dispute,not_approved,closed"']
     };
 
-    const IssueOwnerValidation = {
+    const IssueUserValidation = {
         type: 'list',
         allowBlank: false,
         formulae: ['Owners!C:C']
@@ -229,11 +238,20 @@ function fillIssues(worksheet, issues, types, users, locations, documents) {
 
     const IssueColumns = [
         { id: 'id',             propertyName: 'id',                     columnTitle: 'ID',          columnWidth: 8,     locked: true },
+        { id: 'identifier',     propertyName: 'identifier',             columnTitle: '#',           columnWidth: 8,     locked: true },
         { id: 'type',           propertyName: 'ng_issue_subtype_id',    columnTitle: 'Type',        columnWidth: 16,    locked: true,   format: IssueTypeFormat,        validation: IssueTypeValidation },
         { id: 'title',          propertyName: 'title',                  columnTitle: 'Title',       columnWidth: 32,    locked: false },
         { id: 'description',    propertyName: 'description',            columnTitle: 'Description', columnWidth: 32,    locked: false },
-        { id: 'owner',          propertyName: 'owner',                  columnTitle: 'Owner',       columnWidth: 16,    locked: true,   format: IssueOwnerFormat,       validation: IssueOwnerValidation },
+        { id: 'created_by',     propertyName: 'created_by',             columnTitle: 'Created by',  columnWidth: 16,    locked: true,   format: IssueUserFormat },
+        { id: 'updated_by',     propertyName: 'updated_by',             columnTitle: 'Updated by',  columnWidth: 16,    locked: true,   format: IssueUserFormat },
+        { id: 'assigned_to',    propertyName: 'assigned_to',            columnTitle: 'Assigned to', columnWidth: 16,    locked: true,   format: IssueUserFormat },
+        { id: 'assigned_to_type', propertyName: 'assigned_to_type',     columnTitle: 'Assignee type', columnWidth: 8,   locked: true },
+        { id: 'owner',          propertyName: 'owner',                  columnTitle: 'Owner',       columnWidth: 16,    locked: true,   format: IssueUserFormat,       validation: IssueUserValidation },
+        { id: 'created_at',     propertyName: 'created_at',             columnTitle: 'Created on',  columnWidth: 12,    locked: true,   format: IssueDateFormat },
+        { id: 'updated_at',     propertyName: 'updated_at',             columnTitle: 'Updated on',  columnWidth: 12,    locked: true,   format: IssueDateFormat },
+        { id: 'due_date',       propertyName: 'due_date',               columnTitle: 'Due date',    columnWidth: 12,    locked: true,   format: IssueDateFormat },
         { id: 'location',       propertyName: 'lbs_location',           columnTitle: 'Location',    columnWidth: 16,    locked: true,   format: IssueLocationFormat,    validation: IssueLocationValidation },
+        { id: 'location_description', propertyName: 'location_description', columnTitle: 'Location details', columnWidth: 16,    locked: true },
         { id: 'document',       propertyName: 'target_urn',             columnTitle: 'Document',    columnWidth: 32,    locked: true,   format: IssueDocumentFormat,    validation: IssueDocumentValidation },
         { id: 'status',         propertyName: 'status',                 columnTitle: 'Status',      columnWidth: 16,    locked: false,                                  validation: IssueStatusValidation },
         { id: 'answer',         propertyName: 'answer',                 columnTitle: 'Answer',      columnWidth: 32,    locked: false },
@@ -452,17 +470,17 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken, sequenti
         try {
             const issueID = row.values[1];
             const currentIssueAttributes = issues.find(issue => issue.id === issueID);
-            const newIssueTypeMatch = unrich(row.values[2]).match(/.+\[(.+),(.+)\]$/);
+            const newIssueTypeMatch = unrich(row.values[3]).match(/.+\[(.+),(.+)\]$/);
             if (!newIssueTypeMatch) {
                 results.failed.push({ id: issueID, row: rowNumber, error: 'Could not parse issue type and subtype IDs.' });
                 return;
             }
-            const newIssueOwner = unrich(row.values[5]).match(/.+\[(.+)\]$/);
+            const newIssueOwner = unrich(row.values[10]).match(/.+\[(.+)\]$/);
             if (!newIssueOwner) {
                 results.failed.push({ id: issueID, row: rowNumber, error: 'Could not parse issue owner ID.' });
                 return;
             }
-            const newIssueLocation = unrich(row.values[6]).match(/.+\[(.+)\]$/);
+            const newIssueLocation = unrich(row.values[14]).match(/.+\[(.+)\]$/);
             // if (!newIssueLocation) {
             //     results.failed.push({ id: issueID, error: 'Could not parse issue location ID.' });
             //     return;
@@ -470,13 +488,14 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken, sequenti
             const newIssueAttributes = {
                 ng_issue_type_id: newIssueTypeMatch[1],
                 ng_issue_subtype_id: newIssueTypeMatch[2],
-                title: unrich(row.values[3]),
-                description: unrich(row.values[4]),
+                title: unrich(row.values[4]),
+                description: unrich(row.values[5]),
                 owner: newIssueOwner[1],
                 lbs_location: newIssueLocation ? newIssueLocation[1] : null,
+                location_description: unrich(row.values[15]),
                 //document: ...
-                status: unrich(row.values[8]),
-                answer: unrich(row.values[9])
+                status: unrich(row.values[17]),
+                answer: unrich(row.values[18])
             };
 
             // Check if the issue exists in BIM360
