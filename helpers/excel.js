@@ -45,7 +45,7 @@ async function exportIssues(opts) {
     console.log('Generating XLSX spreadsheet.');
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'bim360-issue-editor';
-    fillIssues(workbook.addWorksheet('Issues'), issues, types, users, locations, customAttributes, documents);
+    fillIssues(workbook.addWorksheet('Issues'), project_id, issues, types, users, locations, customAttributes, documents);
     fillIssueTypes(workbook.addWorksheet('Types'), types);
     fillIssueOwners(workbook.addWorksheet('Owners'), users);
     fillIssueLocations(workbook.addWorksheet('Locations'), locations);
@@ -238,7 +238,7 @@ async function loadReferencedDocuments(bim360, projectId, issues) {
     return referencedDocuments;
 }
 
-function fillIssues(worksheet, issues, types, users, locations, customAttributes, documents) {
+function fillIssues(worksheet, projectId, issues, types, users, locations, customAttributes, documents) {
     const IssueTypeFormat = (issueSubtypeID) => {
         let issueTypeID, issueTypeName, issueSubtypeName;
         for (const issueType of types) {
@@ -328,7 +328,7 @@ function fillIssues(worksheet, issues, types, users, locations, customAttributes
 
     const IssueColumns = [
         { id: 'id',             propertyName: 'id',                     columnTitle: 'ID',          columnWidth: 8,     locked: true },
-        { id: 'identifier',     propertyName: 'identifier',             columnTitle: '#',           columnWidth: 8,     locked: true },
+        { id: 'identifier',     propertyName: 'identifier',             columnTitle: '#',           columnWidth: 8,     locked: true,   hyperlink: true },
         { id: 'type',           propertyName: 'ng_issue_subtype_id',    columnTitle: 'Type',        columnWidth: 16,    locked: true,   format: IssueTypeFormat,        validation: IssueTypeValidation },
         { id: 'title',          propertyName: 'title',                  columnTitle: 'Title',       columnWidth: 32,    locked: false },
         { id: 'description',    propertyName: 'description',            columnTitle: 'Description', columnWidth: 32,    locked: false },
@@ -378,7 +378,13 @@ function fillIssues(worksheet, issues, types, users, locations, customAttributes
                 }
             }
         }
-        worksheet.addRow(row);
+
+        const newRow = worksheet.addRow(row);
+
+        // Add Hyperlink to selected cell
+        const hyperlinkCell = IssueColumns.findIndex(c => c.hyperlink);
+        if (hyperlinkCell > -1)
+            encodeHyperlink(newRow, hyperlinkCell + 1, projectId, issue['id']);
     }
 
     // Setup data validation and protection where needed
@@ -517,6 +523,20 @@ function encodeNameID(name, id) {
             { 'text': `${name}` },
             { 'text': ` [${id}]`, font: { 'color': { 'argb': 'FFCCCCCC' } } }
         ]
+    };
+}
+
+function encodeHyperlink(row, cellPosition, projectId, issueId) {
+    const hyperlink = `https://docs.b360.autodesk.com/projects/${projectId.replace('b.', '')}/issues/${issueId}`
+    const cell = row.getCell(cellPosition);
+    cell.value = {
+        text: "#" + cell.value,
+        hyperlink: hyperlink,
+        tooltip: hyperlink
+    };
+    cell.font = {
+        bold: true,
+        color: { argb: 'FF006EAF' }
     };
 }
 
