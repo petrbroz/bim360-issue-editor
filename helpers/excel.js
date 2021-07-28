@@ -33,18 +33,19 @@ async function exportIssues(opts) {
     const userContextBIM360 = new BIM360Client({ token: three_legged_token }, undefined, region);
 
     console.log('Fetching BIM360 data for export.');
-    const [issues, types, users, locations] = await Promise.all([
+    const [issues, types, users, locations, customAttributes] = await Promise.all([
         loadIssues(userContextBIM360, issue_container_id, page_offset, page_limit),
         loadIssueTypes(userContextBIM360, issue_container_id),
         loadUsers(project_id, two_legged_token),
-        loadLocations(userContextBIM360, location_container_id)
+        loadLocations(userContextBIM360, location_container_id),
+        loadCustomAttributes(userContextBIM360, issue_container_id)
     ]);
     const documents = await loadReferencedDocuments(userContextBIM360, project_id, issues);
 
     console.log('Generating XLSX spreadsheet.');
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'bim360-issue-editor';
-    fillIssues(workbook.addWorksheet('Issues'), issues, types, users, locations, documents);
+    fillIssues(workbook.addWorksheet('Issues'), issues, types, users, locations, customAttributes, documents);
     fillIssueTypes(workbook.addWorksheet('Types'), types);
     fillIssueOwners(workbook.addWorksheet('Owners'), users);
     fillIssueLocations(workbook.addWorksheet('Locations'), locations);
@@ -112,6 +113,11 @@ async function loadLocations(bim360, locationContainerID) {
         console.warn('Could not load BIM360 locations. The "Locations" worksheet will be empty.');
     }
     return results;
+}
+
+async function loadCustomAttributes(bim360, issueContainerID) {
+    const attrDefinitions = await bim360.listIssueAttributeDefinitions(issueContainerID);
+    return attrDefinitions;
 }
 
 async function loadDocuments(bim360, hubId, projectId) {
@@ -232,7 +238,7 @@ async function loadReferencedDocuments(bim360, projectId, issues) {
     return referencedDocuments;
 }
 
-function fillIssues(worksheet, issues, types, users, locations, documents) {
+function fillIssues(worksheet, issues, types, users, locations, customAttributes, documents) {
     const IssueTypeFormat = (issueSubtypeID) => {
         let issueTypeID, issueTypeName, issueSubtypeName;
         for (const issueType of types) {
@@ -273,6 +279,12 @@ function fillIssues(worksheet, issues, types, users, locations, documents) {
         } else {
             return '';
         }
+    };
+
+    const IssueCustomAttributeListFormat = (customAttributeID, customAttributeValue) => {
+        const issueCustomAttribute = customAttributes.find(c => c.id === customAttributeID);
+        const issueCustomAttributeValue = issueCustomAttribute.metadata.list.options.find(option => option.id === customAttributeValue);
+        return (issueCustomAttributeValue ? issueCustomAttributeValue.value : null);
     };
 
     const IssueDocumentFormat = (documentID) => {
@@ -337,9 +349,15 @@ function fillIssues(worksheet, issues, types, users, locations, documents) {
         { id: 'attachments',    propertyName: 'attachment_count',       columnTitle: 'Attachments', columnWidth: 8,     locked: true }
     ];
 
-    worksheet.columns = IssueColumns.map(col => {
+    const issuesColumns = IssueColumns.map(col => {
         return { key: col.id, header: col.columnTitle, width: col.columnWidth };
     });
+    // Define Custom Attributes Column headers
+    const issuesCustomAttributesColumns = customAttributes.map(customAttribute => {
+        return { key: customAttribute.id, header: customAttribute.title, width: 16 };
+    });
+    worksheet.columns = issuesColumns.concat(issuesCustomAttributesColumns);
+
     for (const issue of issues) {
         let row = {};
         for (const column of IssueColumns) {
@@ -347,6 +365,17 @@ function fillIssues(worksheet, issues, types, users, locations, documents) {
                 row[column.id] = column.format(issue[column.propertyName]);
             } else {
                 row[column.id] = issue[column.propertyName];
+            }
+        }
+        // Add Custom Attributes value to row
+        for (const customAttribute of customAttributes) {
+            const issueCustomAttribute = issue.custom_attributes.find(c => c.id === customAttribute.id);
+            if (issueCustomAttribute) {
+                if (issueCustomAttribute.type == 'list') {
+                    row[issueCustomAttribute.id] = IssueCustomAttributeListFormat(issueCustomAttribute.id, issueCustomAttribute.value);
+                } else {
+                    row[issueCustomAttribute.id] = issueCustomAttribute.value;
+                }
             }
         }
         worksheet.addRow(row);
