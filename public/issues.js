@@ -162,7 +162,7 @@ class IssueView {
         $creatorPicker.empty();
         $creatorPicker.append(`<option value="">(All)</option>`);
         for (const user of this.users) {
-            $creatorPicker.append(`<option value="${user.uid}">${escape(user.name)}</option>`);
+            $creatorPicker.append(`<option value="${user.autodeskId}">${escape(user.name)}</option>`);
         }
 
         // Owner dropdown
@@ -170,7 +170,7 @@ class IssueView {
         $ownerPicker.empty();
         $ownerPicker.append(`<option value="">(All)</option>`);
         for (const user of this.users) {
-            $ownerPicker.append(`<option value="${user.uid}">${escape(user.name)}</option>`);
+            $ownerPicker.append(`<option value="${user.autodeskId}">${escape(user.name)}</option>`);
         }
 
         // Issue type and subtype dropdowns
@@ -258,7 +258,7 @@ class IssueView {
 
         const generateOwnerSelect = (issue) => `
             <select class="custom-select custom-select-sm issue-owner" data-original-value="${escape(issue.owner)}" ${disabled('owner', issue) ? 'disabled' : ''}>
-                ${this.users.map(user => `<option value="${user.uid}" ${(user.uid === issue.owner) ? 'selected' : ''}>${escape(user.name)}</option>`).join('\n')}
+                ${this.users.map(user => `<option value="${user.autodeskId}" ${(user.autodeskId === issue.owner) ? 'selected' : ''}>${escape(user.name)}</option>`).join('\n')}
             </select>
         `;
 
