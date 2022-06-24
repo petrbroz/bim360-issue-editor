@@ -33,17 +33,19 @@ async function exportIssues(opts) {
     const userContextBIM360 = new BIM360Client({ token: three_legged_token }, undefined, region);
 
     console.log('Fetching BIM360 data for export.');
-    const [issues, types, users, locations, documents] = await Promise.all([
+    const [issues, types, users, locations, customAttributes] = await Promise.all([
         loadIssues(userContextBIM360, issue_container_id, page_offset, page_limit),
         loadIssueTypes(userContextBIM360, issue_container_id),
         loadUsers(project_id, two_legged_token),
         loadLocations(userContextBIM360, location_container_id),
-        loadDocuments(userContextBIM360, hub_id, project_id)
+        loadCustomAttributes(userContextBIM360, issue_container_id)
     ]);
+    const documents = await loadReferencedDocuments(userContextBIM360, project_id, issues);
+
     console.log('Generating XLSX spreadsheet.');
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'bim360-issue-editor';
-    fillIssues(workbook.addWorksheet('Issues'), issues, types, users, locations, documents);
+    fillIssues(workbook.addWorksheet('Issues'), project_id, issues, types, users, locations, customAttributes, documents);
     fillIssueTypes(workbook.addWorksheet('Types'), types);
     fillIssueOwners(workbook.addWorksheet('Owners'), users);
     fillIssueLocations(workbook.addWorksheet('Locations'), locations);
@@ -113,6 +115,11 @@ async function loadLocations(bim360, locationContainerID) {
     return results;
 }
 
+async function loadCustomAttributes(bim360, issueContainerID) {
+    const attrDefinitions = await bim360.listIssueAttributeDefinitions(issueContainerID);
+    return attrDefinitions;
+}
+
 async function loadDocuments(bim360, hubId, projectId) {
     // let results = [];
     // async function collect(folderId) {
@@ -154,7 +161,84 @@ async function loadDocuments(bim360, hubId, projectId) {
     return [].concat.apply([], results);
 }
 
-function fillIssues(worksheet, issues, types, users, locations, documents) {
+async function loadReferencedDocuments(bim360, projectId, issues) {
+    // Extract target_urn from issues array then filter null & duplicate urns 
+    const issuesTargetUrns = issues.map(issue => issue.target_urn);
+    const uniqueIssuesTargetUrns = issuesTargetUrns.filter((value, index, self) => value && self.indexOf(value) === index);
+
+    // Slice the unique TargetUrns coming from issues into chunks of 50 each
+    const chunkSize = 50;
+    let uniqueIssuesTargetUrnsChuncks = [];
+    for (let i = 0; i < uniqueIssuesTargetUrns.length; i += chunkSize) {
+        const chunk = uniqueIssuesTargetUrns.slice(i, i + chunkSize);
+        uniqueIssuesTargetUrnsChuncks.push(chunk);
+    }
+
+    async function listItems(projectId, targetUrns, token) {
+        let url = `https://developer.api.autodesk.com/data/v1/projects/${projectId}/commands`;
+        let opts = {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/vnd.api+json'
+            }
+        };
+        let requestTargetUrns = targetUrns.map(targetUrn => ({ "type": "items", "id": targetUrn }));
+        let data = {
+            "jsonapi": {
+                "version": "1.0"
+            },
+            "data": {
+                "type": "commands",
+                "attributes": {
+                    "extension": {
+                        "type": "commands:autodesk.core:ListItems",
+                        "version": "1.1.0",
+                        "data": {
+                            "includePathInProject": true
+                        }
+                    }
+                },
+                "relationships": {
+                    "resources": {
+                        "data": requestTargetUrns
+                    }
+                }
+            }
+        };
+
+        let response = await axios.post(url, data, opts);
+        let results = response.data.data;
+        return results;
+    }
+
+    let retries = 0;
+    let referencedDocuments = [];
+    for (let i = 0; i < uniqueIssuesTargetUrnsChuncks.length; i++) {
+        console.log("Fetching BIM360 documents page:", i);
+        try {
+            const results = await listItems(projectId, uniqueIssuesTargetUrnsChuncks[i], bim360.token);
+            referencedDocuments = referencedDocuments.concat(results.relationships.resources.data);
+            retries = 0;
+        } catch (err) {
+            if (err.isAxiosError && err.response.status == 429) {
+                const retryAfter = parseInt(err.response.headers["retry-after"]);
+                if (retryAfter) {
+                    console.error(`Rate limit: API Quota limit exceeded. Retrying after ${retryAfter} seconds`); 
+                    await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+                }
+                if (retries++ <= 3)
+                    i--; // Retry for 3 times 
+            } else {
+                console.error(err);
+            }
+        }
+    }
+
+    console.log(`Collected data on ${referencedDocuments.length} BIM360 documents`);
+    return referencedDocuments;
+}
+
+function fillIssues(worksheet, projectId, issues, types, users, locations, customAttributes, documents) {
     const IssueTypeFormat = (issueSubtypeID) => {
         let issueTypeID, issueTypeName, issueSubtypeName;
         for (const issueType of types) {
@@ -170,10 +254,19 @@ function fillIssues(worksheet, issues, types, users, locations, documents) {
         return '';
     };
 
-    const IssueOwnerFormat = (ownerID) => {
-        const user = users.find(u => u.uid === ownerID);
+    const IssueUserFormat = (ownerID) => {
+        const user = users.find(u => u.autodeskId === ownerID);
         if (user) {
-            return encodeNameID(user.name, user.uid);
+            return encodeNameID(user.name, user.autodeskId);
+        } else {
+            return '';
+        }
+    };
+
+    const IssueDateFormat = (issueDateString) => {
+        if (issueDateString) {
+            let issueDate = new Date(issueDateString);
+            return issueDate.toISOString().replace(/T/, ' ').replace(/\..+/, '');
         } else {
             return '';
         }
@@ -188,10 +281,16 @@ function fillIssues(worksheet, issues, types, users, locations, documents) {
         }
     };
 
+    const IssueCustomAttributeListFormat = (customAttributeID, customAttributeValue) => {
+        const issueCustomAttribute = customAttributes.find(c => c.id === customAttributeID);
+        const issueCustomAttributeValue = issueCustomAttribute.metadata.list.options.find(option => option.id === customAttributeValue);
+        return (issueCustomAttributeValue ? issueCustomAttributeValue.value : null);
+    };
+
     const IssueDocumentFormat = (documentID) => {
-        const document = documents.find(d => d.relationships.item && d.relationships.item.data.id === documentID);
+        const document = documents.find(d => d.id === documentID);
         if (document) {
-            return encodeNameID(document.attributes.displayName, document.id);
+            return encodeNameID(document.meta.attributes.displayName, document.meta.attributes.pathInProject);
         } else {
             return '';
         }
@@ -209,7 +308,7 @@ function fillIssues(worksheet, issues, types, users, locations, documents) {
         formulae: ['"void,draft,open,answered,work_completed,ready_to_inspect,in_dispute,not_approved,closed"']
     };
 
-    const IssueOwnerValidation = {
+    const IssueUserValidation = {
         type: 'list',
         allowBlank: false,
         formulae: ['Owners!C:C']
@@ -224,16 +323,25 @@ function fillIssues(worksheet, issues, types, users, locations, documents) {
     const IssueDocumentValidation = {
         type: 'list',
         allowBlank: false,
-        formulae: ['Documents!C:C']
+        formulae: ['Documents!D:D']
     };
 
     const IssueColumns = [
         { id: 'id',             propertyName: 'id',                     columnTitle: 'ID',          columnWidth: 8,     locked: true },
+        { id: 'identifier',     propertyName: 'identifier',             columnTitle: '#',           columnWidth: 8,     locked: true,   hyperlink: true },
         { id: 'type',           propertyName: 'ng_issue_subtype_id',    columnTitle: 'Type',        columnWidth: 16,    locked: true,   format: IssueTypeFormat,        validation: IssueTypeValidation },
         { id: 'title',          propertyName: 'title',                  columnTitle: 'Title',       columnWidth: 32,    locked: false },
         { id: 'description',    propertyName: 'description',            columnTitle: 'Description', columnWidth: 32,    locked: false },
-        { id: 'owner',          propertyName: 'owner',                  columnTitle: 'Owner',       columnWidth: 16,    locked: true,   format: IssueOwnerFormat,       validation: IssueOwnerValidation },
+        { id: 'created_by',     propertyName: 'created_by',             columnTitle: 'Created by',  columnWidth: 16,    locked: true,   format: IssueUserFormat },
+        { id: 'updated_by',     propertyName: 'updated_by',             columnTitle: 'Updated by',  columnWidth: 16,    locked: true,   format: IssueUserFormat },
+        { id: 'assigned_to',    propertyName: 'assigned_to',            columnTitle: 'Assigned to', columnWidth: 16,    locked: true,   format: IssueUserFormat },
+        { id: 'assigned_to_type', propertyName: 'assigned_to_type',     columnTitle: 'Assignee type', columnWidth: 8,   locked: true },
+        { id: 'owner',          propertyName: 'owner',                  columnTitle: 'Owner',       columnWidth: 16,    locked: true,   format: IssueUserFormat,       validation: IssueUserValidation },
+        { id: 'created_at',     propertyName: 'created_at',             columnTitle: 'Created on',  columnWidth: 12,    locked: true,   format: IssueDateFormat },
+        { id: 'updated_at',     propertyName: 'updated_at',             columnTitle: 'Updated on',  columnWidth: 12,    locked: true,   format: IssueDateFormat },
+        { id: 'due_date',       propertyName: 'due_date',               columnTitle: 'Due date',    columnWidth: 12,    locked: true,   format: IssueDateFormat },
         { id: 'location',       propertyName: 'lbs_location',           columnTitle: 'Location',    columnWidth: 16,    locked: true,   format: IssueLocationFormat,    validation: IssueLocationValidation },
+        { id: 'location_description', propertyName: 'location_description', columnTitle: 'Location details', columnWidth: 16,    locked: true },
         { id: 'document',       propertyName: 'target_urn',             columnTitle: 'Document',    columnWidth: 32,    locked: true,   format: IssueDocumentFormat,    validation: IssueDocumentValidation },
         { id: 'status',         propertyName: 'status',                 columnTitle: 'Status',      columnWidth: 16,    locked: false,                                  validation: IssueStatusValidation },
         { id: 'answer',         propertyName: 'answer',                 columnTitle: 'Answer',      columnWidth: 32,    locked: false },
@@ -241,9 +349,15 @@ function fillIssues(worksheet, issues, types, users, locations, documents) {
         { id: 'attachments',    propertyName: 'attachment_count',       columnTitle: 'Attachments', columnWidth: 8,     locked: true }
     ];
 
-    worksheet.columns = IssueColumns.map(col => {
+    const issuesColumns = IssueColumns.map(col => {
         return { key: col.id, header: col.columnTitle, width: col.columnWidth };
     });
+    // Define Custom Attributes Column headers
+    const issuesCustomAttributesColumns = customAttributes.map(customAttribute => {
+        return { key: customAttribute.id, header: customAttribute.title, width: 16 };
+    });
+    worksheet.columns = issuesColumns.concat(issuesCustomAttributesColumns);
+
     for (const issue of issues) {
         let row = {};
         for (const column of IssueColumns) {
@@ -253,7 +367,24 @@ function fillIssues(worksheet, issues, types, users, locations, documents) {
                 row[column.id] = issue[column.propertyName];
             }
         }
-        worksheet.addRow(row);
+        // Add Custom Attributes value to row
+        for (const customAttribute of customAttributes) {
+            const issueCustomAttribute = issue.custom_attributes.find(c => c.id === customAttribute.id);
+            if (issueCustomAttribute) {
+                if (issueCustomAttribute.type == 'list') {
+                    row[issueCustomAttribute.id] = IssueCustomAttributeListFormat(issueCustomAttribute.id, issueCustomAttribute.value);
+                } else {
+                    row[issueCustomAttribute.id] = issueCustomAttribute.value;
+                }
+            }
+        }
+
+        const newRow = worksheet.addRow(row);
+
+        // Add Hyperlink to selected cell
+        const hyperlinkCell = IssueColumns.findIndex(c => c.hyperlink);
+        if (hyperlinkCell > -1)
+            encodeHyperlink(newRow, hyperlinkCell + 1, projectId, issue['id']);
     }
 
     // Setup data validation and protection where needed
@@ -313,9 +444,9 @@ function fillIssueOwners(worksheet, users) {
 
     for (const user of users) {
         worksheet.addRow({
-            'user-id': user.uid,
+            'user-id': user.autodeskId,
             'user-name': user.name,
-            'user-full': encodeNameID(user.name, user.uid)
+            'user-full': encodeNameID(user.name, user.autodeskId)
         });
     }
 
@@ -360,19 +491,20 @@ function fillIssueDocuments(worksheet, documents) {
     worksheet.columns = [
         { key: 'document-urn', header: 'Document URN', width: 16 },
         { key: 'document-name', header: 'Document Name', width: 32 },
+        { key: 'document-path', header: 'Document Path', width: 64 },
         { key: 'document-full', header: '', width: 64 } // Full representation to show in the "issues" worksheet (that can be later decoded back into IDs)
     ];
 
-    for (const version of documents) {
-        if (version.relationships.item) {
-            const id = version.relationships.item.data.id;
-            const displayName = version.attributes.displayName;
+    for (const document of documents) {
+        const id = document.id;
+        const displayName = document.meta.attributes.displayName;
+        const pathInProject = document.meta.attributes.pathInProject;
         worksheet.addRow({
                 'document-urn': id,
                 'document-name': displayName,
-                'document-full': encodeNameID(displayName, id)
+                'document-path': pathInProject,
+                'document-full': encodeNameID(displayName, pathInProject)
         });
-    }
     }
 
     // Setup data validation and protection where needed
@@ -391,6 +523,20 @@ function encodeNameID(name, id) {
             { 'text': `${name}` },
             { 'text': ` [${id}]`, font: { 'color': { 'argb': 'FFCCCCCC' } } }
         ]
+    };
+}
+
+function encodeHyperlink(row, cellPosition, projectId, issueId) {
+    const hyperlink = `https://docs.b360.autodesk.com/projects/${projectId.replace('b.', '')}/issues/${issueId}`
+    const cell = row.getCell(cellPosition);
+    cell.value = {
+        text: "#" + cell.value,
+        hyperlink: hyperlink,
+        tooltip: hyperlink
+    };
+    cell.font = {
+        bold: true,
+        color: { argb: 'FF006EAF' }
     };
 }
 
@@ -452,17 +598,17 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken, sequenti
         try {
             const issueID = row.values[1];
             const currentIssueAttributes = issues.find(issue => issue.id === issueID);
-            const newIssueTypeMatch = unrich(row.values[2]).match(/.+\[(.+),(.+)\]$/);
+            const newIssueTypeMatch = unrich(row.values[3]).match(/.+\[(.+),(.+)\]$/);
             if (!newIssueTypeMatch) {
                 results.failed.push({ id: issueID, row: rowNumber, error: 'Could not parse issue type and subtype IDs.' });
                 return;
             }
-            const newIssueOwner = unrich(row.values[5]).match(/.+\[(.+)\]$/);
+            const newIssueOwner = unrich(row.values[10]).match(/.+\[(.+)\]$/);
             if (!newIssueOwner) {
                 results.failed.push({ id: issueID, row: rowNumber, error: 'Could not parse issue owner ID.' });
                 return;
             }
-            const newIssueLocation = unrich(row.values[6]).match(/.+\[(.+)\]$/);
+            const newIssueLocation = unrich(row.values[14]).match(/.+\[(.+)\]$/);
             // if (!newIssueLocation) {
             //     results.failed.push({ id: issueID, error: 'Could not parse issue location ID.' });
             //     return;
@@ -470,13 +616,14 @@ async function importIssues(buffer, issueContainerID, threeLeggedToken, sequenti
             const newIssueAttributes = {
                 ng_issue_type_id: newIssueTypeMatch[1],
                 ng_issue_subtype_id: newIssueTypeMatch[2],
-                title: unrich(row.values[3]),
-                description: unrich(row.values[4]),
+                title: unrich(row.values[4]),
+                description: unrich(row.values[5]),
                 owner: newIssueOwner[1],
                 lbs_location: newIssueLocation ? newIssueLocation[1] : null,
+                location_description: unrich(row.values[15]),
                 //document: ...
-                status: unrich(row.values[8]),
-                answer: unrich(row.values[9])
+                status: unrich(row.values[17]),
+                answer: unrich(row.values[18])
             };
 
             // Check if the issue exists in BIM360
