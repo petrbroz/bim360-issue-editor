@@ -171,9 +171,9 @@ function fillIssues(worksheet, issues, types, users, locations, documents) {
     };
 
     const IssueOwnerFormat = (ownerID) => {
-        const user = users.find(u => u.uid === ownerID);
+        const user = users.find(u => u.autodeskId === ownerID);
         if (user) {
-            return encodeNameID(user.name, user.uid);
+            return encodeNameID(user.name, user.autodeskId);
         } else {
             return '';
         }
@@ -313,9 +313,9 @@ function fillIssueOwners(worksheet, users) {
 
     for (const user of users) {
         worksheet.addRow({
-            'user-id': user.uid,
+            'user-id': user.autodeskId,
             'user-name': user.name,
-            'user-full': encodeNameID(user.name, user.uid)
+            'user-full': encodeNameID(user.name, user.autodeskId)
         });
     }
 
