@@ -23,7 +23,7 @@ Live demo is running on https://bim360-issue-editor.autodesk.io.
 In order to be able to access your BIM 360 project from this demo, you will need to add
 the following Forge credentials as a [custom integration](https://forge.autodesk.com/en/docs/bim360/v1/tutorials/getting-started/manage-access-to-docs):
 
-- Forge Client ID: `gnChEZ6tph1H9IAelM2mYufYZVU1qqKt`
+- Forge Client ID: `YhryNMLor4R1maFhY4zER8unpISoP5E4`
 - Forge App Name: `Internal BIM360 Testing App`
 
 ### Command-Line Utility
